@@ -1,0 +1,23 @@
+Legal Disclaimer Notice
+
+ALL PRODUCTS, PRODUCT SPECIFICATIONS AND DATA ARE SUBJECT TO CHANGE WITHOUT NOTICE TO IMPROVE RELIABILITY, FUNCTION OR DESIGN, OR OTHERWISE.
+  
+Metriful Ltd., its affiliates, agents, and employees, and all persons acting on its or their behalf (collectively, “Metriful”), disclaim any and all liability for any errors, inaccuracies or incompleteness contained in any datasheet or in any other disclosure.
+
+Metriful makes no warranty, representation or guarantee regarding the suitability of the products for any particular purpose or the continuing production of any product. To the maximum extent permitted by applicable law, Metriful disclaims (i) any and all liability arising out of the application or use of any product or data, (ii) any and all liability, including without limitation special, consequential or incidental damages, and (iii) any and all implied warranties, including warranties of fitness for particular purpose, non-infringement and merchantability.
+
+Statements regarding the suitability of products for certain types of applications are based on Metriful’s knowledge of typical requirements that are often placed on Metriful products in generic applications. Such statements are not binding statements about the suitability of products for a particular application. It is the customer’s responsibility to validate that a particular product is suitable for use in a particular application.
+
+Parameters provided in datasheets and / or specifications may vary in different applications and performance may vary over time. All operating parameters, including typical parameters, must be validated for each customer application by the customer. Product specifications do not expand or otherwise modify Metriful’s terms and conditions of purchase, including but not limited to the warranty expressed therein. Product photographs and diagrams are for illustration purposes only and may differ from the real product appearance.
+
+Metriful products are not designed for use in medical, life-saving, safety, or life-sustaining applications or for any other application in which the failure of the Metriful product could result in personal injury or death. Customers using or selling Metriful products for use in such applications do so at their own risk. No information contained in any Metriful document or disclosure constitutes health or safety advice. 
+
+No license, express or implied, by estoppel or otherwise, to any intellectual property rights is granted by this document or by any conduct of Metriful. Product names and markings noted herein may be trademarks of their respective owners.
+
+
+Copyright 2020 Metriful Ltd.
+
+
+
+
+
