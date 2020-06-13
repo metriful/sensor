@@ -1,7 +1,7 @@
 /* 
    simple_read_sound.ino
 
-   Example code for using the Sense board to measure sound. 
+   Example code for using the Metriful board to measure sound. 
    
    Waits for microphone initialization, then measures and displays 
    the sound data. View the output in the Serial Monitor.
@@ -9,16 +9,16 @@
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 */
 
-#include <Metriful_Sense.h>
+#include <Metriful_sensor.h>
 #include <stdint.h>
 
 //////////////////////////////////////////////////////////
 // USER-EDITABLE SETTINGS
 
-// The I2C address of the Sense board
+// The I2C address of the Metriful board
 uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
 
 // Whether to use floating point representation of numbers in the 
@@ -34,7 +34,7 @@ uint8_t receive_buffer[SOUND_DATA_BYTES] = {0};
 
 void setup() {  
   // Initialize the Arduino pins, set up the serial port and reset:
-  SenseHardwareSetup(i2c_7bit_address); 
+  SensorHardwareSetup(i2c_7bit_address); 
   
   // Wait for the serial port to be ready, for displaying the output
   while (!Serial) {} 
@@ -44,7 +44,7 @@ void setup() {
   // Wait for the microphone to stabilize (takes approximately 1.5 seconds). 
   // The microphone uses a filter which should be allowed to settle before 
   // sound data are measured. 
-  // This only needs to be done once after Sense is powered-on or reset.
+  // This only needs to be done once after Metriful is powered-on or reset.
   bool mic_stable = false;
   while (!mic_stable) {
     // The sound_stable register is set to a non-zero value when the microphone has initialized

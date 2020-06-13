@@ -1,6 +1,6 @@
 #  interrupts.py
 
-#  Example code for using the Sense board interrupts. 
+#  Example code for using the Metriful board interrupts. 
 #  This example is designed to run with Python 3 on a Raspberry Pi.
    
 #  Light and sound interrupts are configured and the program then 
@@ -11,10 +11,10 @@
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 
 from time import sleep
-from Sense_functions import *
+from sensor_functions import *
 
 #########################################################
 # USER-EDITABLE SETTINGS
@@ -48,7 +48,7 @@ if ((light_int_thres_lux_i + (float(light_int_thres_lux_f2dp)/100.0)) > MAX_LUX_
   raise Exception('The chosen light interrupt threshold exceeds the maximum allowed value.')
 
 # Set up the GPIO and I2C communications bus
-(GPIO, I2C_bus) = SenseHardwareSetup()
+(GPIO, I2C_bus) = SensorHardwareSetup()
 
 #########################################################
 
@@ -60,7 +60,7 @@ if (enable_sound_interrupts):
         [(sound_thres_mPa & 0x00FF), (sound_thres_mPa >> 8)])
   # Tell the Pi to monitor the interrupt line for a falling edge event (high-to-low voltage change)
   GPIO.add_event_detect(sound_int_pin, GPIO.FALLING) 
-  # Enable the interrupt on the Sense board
+  # Enable the interrupt on the Metriful board
   I2C_bus.write_i2c_block_data(i2c_7bit_address, SOUND_INTERRUPT_ENABLE_REG, [ENABLED])
 
 if (enable_light_interrupts):
@@ -74,7 +74,7 @@ if (enable_light_interrupts):
   I2C_bus.write_i2c_block_data(i2c_7bit_address, LIGHT_INTERRUPT_POLARITY_REG, [light_int_polarity])
   # Tell the Pi to monitor the interrupt line for a falling edge event (high-to-low voltage change)
   GPIO.add_event_detect(light_int_pin, GPIO.FALLING) 
-  # Enable the interrupt on the Sense board
+  # Enable the interrupt on the Metriful board
   I2C_bus.write_i2c_block_data(i2c_7bit_address, LIGHT_INTERRUPT_ENABLE_REG, [ENABLED])
 
 if (not enable_light_interrupts) and (not enable_sound_interrupts):

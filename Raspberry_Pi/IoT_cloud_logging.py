@@ -1,6 +1,6 @@
 #  IoT_cloud_logging.py
    
-#  Example IoT data logging code for the Sense board. 
+#  Example IoT data logging code for the Metriful board. 
 #  This example is designed to run with Python 3 on a Raspberry Pi.
    
 #  Environmental data values are measured and logged to an internet 
@@ -11,10 +11,10 @@
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 
 import requests
-from Sense_functions import *
+from sensor_functions import *
 
 #########################################################
 # USER-EDITABLE SETTINGS
@@ -52,9 +52,9 @@ else:
 #########################################################
 
 # Set up the GPIO and I2C communications bus
-(GPIO, I2C_bus) = SenseHardwareSetup()
+(GPIO, I2C_bus) = SensorHardwareSetup()
 
-# Apply the chosen settings to the Sense board
+# Apply the chosen settings to the Metriful board
 if (get_particle_data):
   I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_ENABLE_REG, [ENABLED])
 I2C_bus.write_i2c_block_data(i2c_7bit_address, CYCLE_TIME_PERIOD_REG, [cycle_period])
@@ -76,7 +76,7 @@ print("Logging data. Press ctrl-c to exit.")
 # Tell the Pi to monitor READY for a falling edge event (high-to-low voltage change)
 GPIO.add_event_detect(READY_pin, GPIO.FALLING) 
 
-# Tell Sense to enter cycle mode
+# Tell Metriful to enter cycle mode
 I2C_bus.write_byte(i2c_7bit_address, CYCLE_MODE_CMD)
 
 while (True):
@@ -85,7 +85,7 @@ while (True):
   while (not GPIO.event_detected(READY_pin)):
     sleep(0.05)
   
-  # Now read all data from Sense
+  # Now read all data from Metriful
 
   # Air data
   raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, AIR_DATA_READ, AIR_DATA_BYTES)

@@ -1,16 +1,16 @@
 /* 
-   Metriful_Sense.cpp
+   Metriful_sensor.cpp
 
-   This file defines functions which are used in the Sense code examples.
+   This file defines functions which are used in the Metriful code examples.
 
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 */
 
-#include "Metriful_Sense.h"
-#include "Sense_constants.h"
+#include "Metriful_sensor.h"
+#include "sensor_constants.h"
 #include "Arduino_pin_definitions.h"
 
 #ifdef ARDUINO_SAMD_NANO_33_IOT
@@ -23,7 +23,7 @@
 // The Arduino Wire library has a limited internal buffer size:
 #define ARDUINO_WIRE_BUFFER_LIMIT_BYTES 32
 
-void SenseHardwareSetup(uint8_t i2c_7bit_address) {
+void SensorHardwareSetup(uint8_t i2c_7bit_address) {
   // Turn off the built-in LED
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
@@ -46,10 +46,10 @@ void SenseHardwareSetup(uint8_t i2c_7bit_address) {
   // Full settings are: 8 data bits, no parity, one stop bit
   Serial.begin(SERIAL_BAUD_RATE);
   
-  // Wait for Sense to finish power-on initialization:
+  // Wait for Metriful to finish power-on initialization:
   while (digitalRead(READY_PIN) == HIGH) {} 
   
-  // Reset Sense to clear any previous state:
+  // Reset Metriful to clear any previous state:
   uint8_t tx_buf[1] = {0};
   TransmitI2C(i2c_7bit_address, RESET_CMD, tx_buf, 0);
   delay(5);
@@ -305,11 +305,11 @@ void printParticleData(const ParticleData_t * particleData, bool printColumns) {
 
 ////////////////////////////////////////////////////////////////////////
 
-// Send data to Sense using the I2C-compatible two wire interface.
+// Send data to Metriful using the I2C-compatible two wire interface.
 //
 // Returns true on success, false on failure.
 //
-// dev_addr_7bit = the 7-bit I2C address of the Sense board.
+// dev_addr_7bit = the 7-bit I2C address of the Metriful board.
 // commandRegister = the settings register code or command code to be used.
 // data = array containing the data to be sent; its length must be at least "data_length" bytes.
 // data_length = the number of bytes from the "data" array to be sent. 
@@ -333,11 +333,11 @@ bool TransmitI2C(uint8_t dev_addr_7bit, uint8_t commandRegister, uint8_t data[],
   return (TheWire.endTransmission(true) == 0);
 }
 
-// Read data from Sense using the I2C-compatible two wire interface.
+// Read data from Metriful using the I2C-compatible two wire interface.
 //
 // Returns true on success, false on failure.
 //
-// dev_addr_7bit = the 7-bit I2C address of the Sense board.
+// dev_addr_7bit = the 7-bit I2C address of the Metriful board.
 // commandRegister = the settings register code or data location code to be used.
 // data = array to store the received data; its length must be at least "data_length" bytes.
 // data_length = the number of bytes to read. 

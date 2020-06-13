@@ -1,7 +1,7 @@
 /* 
    simple_read_T_H.ino
 
-   Example code for using the Sense board to measure humidity 
+   Example code for using the Metriful board to measure humidity 
    and temperature. 
    
    Measures and displays the humidity and temperature, demonstrating 
@@ -12,16 +12,16 @@
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 */
 
-#include <Metriful_Sense.h>
+#include <Metriful_sensor.h>
 #include <stdint.h>
 
 //////////////////////////////////////////////////////////
 // USER-EDITABLE SETTINGS
 
-// The I2C address of the Sense board
+// The I2C address of the Metriful board
 uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
 
 // Whether to use floating point representation of numbers (uses more 
@@ -37,7 +37,7 @@ uint8_t receive_buffer[SOUND_DATA_BYTES] = {0};
 
 void setup() {  
   // Initialize the Arduino pins, set up the serial port and reset:
-  SenseHardwareSetup(i2c_7bit_address); 
+  SensorHardwareSetup(i2c_7bit_address); 
   
   // Wait for the serial port to be ready, for displaying the output
   while (!Serial) {} 

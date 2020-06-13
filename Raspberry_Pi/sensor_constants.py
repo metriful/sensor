@@ -1,13 +1,13 @@
-#  Sense_constants.py
+#  sensor_constants.py
 
 #  This file defines constant values which are used in the control 
-#  of the Sense board and the interpretation of its output data.
-#  All values have been taken from the Sense datasheet.
+#  of the Metriful board and the interpretation of its output data.
+#  All values have been taken from the Metriful sensor datasheet.
 
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 
 # Settings registers
 PARTICLE_SENSOR_ENABLE_REG = 0x07 

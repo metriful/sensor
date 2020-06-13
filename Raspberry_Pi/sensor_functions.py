@@ -1,12 +1,12 @@
-#  Sense_functions.py
+#  sensor_functions.py
 
 #  This file defines functions and hardware pins which are used 
-#  in the Sense code examples on Raspberry Pi.
+#  in the Metriful code examples on Raspberry Pi.
 
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 
 import sys
 from time import sleep
@@ -14,7 +14,7 @@ import datetime
 import RPi.GPIO as GPIO
 import smbus
 import os
-from Sense_constants import *
+from sensor_constants import *
 
 ##########################################################################################
 
@@ -29,21 +29,21 @@ READY_pin = 11    # Raspberry Pi pin 11 connects to RDY
 # Raspberry Pi pin 5 to SCL
 # Raspberry Pi pin 6 to GND (0 V)
 # Raspberry Pi pin 1 to VDD and VPU (3.3 V)
-# Sense pin VIN is not used.
+# Metriful pin VIN is not used.
 #
 # If a PPD42 particle sensor is used, also connect the following:
 # Raspberry Pi pin 2 to PPD42 pin 3
 # Raspberry Pi pin 9 to PPD42 pin 1
-# PPD42 pin 4 to Sense pin PRT
+# PPD42 pin 4 to Metriful pin PRT
 #
 # For further details, see the readme and User Guide
 
-# The I2C address of the Sense board
+# The I2C address of the Metriful board
 i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN 
 
 ##########################################################################################
 
-def SenseHardwareSetup():
+def SensorHardwareSetup():
   # Set up the Raspberry Pi GPIO
   GPIO.setwarnings(False)
   GPIO.setmode(GPIO.BOARD) 
@@ -54,11 +54,11 @@ def SenseHardwareSetup():
   # Initialize the I2C communications bus object
   I2C_bus = smbus.SMBus(1) # Port 1 is the default for I2C on Raspberry Pi    
 
-  # Wait for Sense to finish power-on initialization:
+  # Wait for Metriful to finish power-on initialization:
   while (GPIO.input(READY_pin) == 1):
     sleep(0.05)
     
-  # Reset Sense to clear any previous state:
+  # Reset Metriful to clear any previous state:
   I2C_bus.write_byte(i2c_7bit_address, RESET_CMD)
   sleep(0.005)
   

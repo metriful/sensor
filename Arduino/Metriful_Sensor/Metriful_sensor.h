@@ -1,21 +1,21 @@
 /* 
-   Metriful_Sense.h
+   Metriful_sensor.h
 
-   This file declares functions which are used in the Sense code examples.
-   The function definitions are in file Metriful_Sense.cpp
+   This file declares functions which are used in the Metriful code examples.
+   The function definitions are in file Metriful_sensor.cpp
 
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 */
 
-#ifndef METRIFUL_SENSE_H
-#define METRIFUL_SENSE_H
+#ifndef METRIFUL_SENSOR_H
+#define METRIFUL_SENSOR_H
 
 #include "Arduino.h"
 #include <stdint.h>
-#include "Sense_constants.h"
+#include "sensor_constants.h"
 #include "Arduino_pin_definitions.h"
 
 #define I2C_CLK_FREQ_HZ 100000
@@ -26,7 +26,7 @@ extern volatile bool ready_assertion_event;
 ////////////////////////////////////////////////////////////////////////
 
 // Data category structs containing floats. If floats are not wanted, 
-// use the integer-only struct versions in Sense_constants.h 
+// use the integer-only struct versions in sensor_constants.h 
 
 typedef struct {
   float SPL_dBA;
@@ -61,7 +61,7 @@ typedef struct {
 
 ////////////////////////////////////////////////////////////////////////
 
-void SenseHardwareSetup(uint8_t i2c_7bit_address);
+void SensorHardwareSetup(uint8_t i2c_7bit_address);
 void ready_ISR(void);
 
 bool TransmitI2C(uint8_t dev_addr_7bit, uint8_t commandRegister, uint8_t data[], uint8_t data_length);

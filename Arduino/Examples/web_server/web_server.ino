@@ -1,7 +1,7 @@
 /* 
    web_server.ino
 
-   Example code for using the Sense board to serve a web page displaying
+   Example code for using the Metriful board to serve a web page displaying
    environment data over a WiFi network.
    
    This example is designed for the Arduino Nano 33 IoT only.
@@ -14,10 +14,10 @@
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 */
 
-#include <Metriful_Sense.h>
+#include <Metriful_sensor.h>
 #include <stdint.h>
 #include <SPI.h>
 #include <WiFiNINA.h>
@@ -28,7 +28,7 @@
 // Choose how often to read and display data (every 3, 100, 300 seconds)
 uint8_t cycle_period = CYCLE_PERIOD_3_S;
 
-// The I2C address of the Sense board
+// The I2C address of the Metriful board
 uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
 
 // Choose whether to print data over the serial port
@@ -88,7 +88,7 @@ char pageBuffer[2100] = {0};
 
 void setup() {
   // Initialize the Arduino pins, set up the serial port and reset:
-  SenseHardwareSetup(i2c_7bit_address); 
+  SensorHardwareSetup(i2c_7bit_address); 
   
   if (createWifiNetwork) {
     // The Arduino generates its own WiFi network 
@@ -153,7 +153,7 @@ void setup() {
     while (true) {}
   }
   
-  // Apply the chosen settings to the Sense board
+  // Apply the chosen settings to the Metriful board
   if (getParticleData) {
     transmit_buffer[0] = ENABLED;
     TransmitI2C(i2c_7bit_address, PARTICLE_SENSOR_ENABLE_REG, transmit_buffer, 1);
@@ -178,7 +178,7 @@ void loop() {
   
   // new data are now ready
 
-  /* Read data from Sense into the data structs. 
+  /* Read data from Metriful into the data structs. 
   For each category of data (air, sound, etc.) a pointer to the data struct is 
   passed to the ReceiveI2C() function. The received byte sequence fills the data 
   struct in the correct order so that each field within the struct receives
@@ -263,9 +263,9 @@ void handleClientRequests(void) {
 void assembleWebPage(void) {
   strcpy(pageBuffer,"HTTP/1.1 200 OK\n" "Content-type:text/html\n" "Connection: close\n");
   sprintf(lineBuffer,"Refresh: %i\n\n<!DOCTYPE HTML><html>\
-            <head><title>Metriful Sense Demo</title>",refreshPeriodSeconds);
+            <head><title>Metriful Sensor Demo</title>",refreshPeriodSeconds);
   strcat(pageBuffer,lineBuffer);
-  strcat(pageBuffer,"</head><body><h1>Sense Environment Data</h1>");
+  strcat(pageBuffer,"</head><body><h1>Indoor Environment Data</h1>");
   
   //////////////////////////////////////
   

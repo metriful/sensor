@@ -1,6 +1,6 @@
 #  simple_read_T_H.py
 
-#  Example code for using the Sense board to measure humidity 
+#  Example code for using the Metriful board to measure humidity 
 #  and temperature. 
 #  This example is designed to run with Python 3 on a Raspberry Pi.
 
@@ -12,12 +12,12 @@
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 
-from Sense_functions import *
+from sensor_functions import *
 
 # Set up the GPIO and I2C communications bus
-(GPIO, I2C_bus) = SenseHardwareSetup()
+(GPIO, I2C_bus) = SensorHardwareSetup()
 
 # Tell the Pi to monitor READY for a falling edge event (high-to-low voltage change)
 GPIO.add_event_detect(READY_pin, GPIO.FALLING) 
@@ -35,7 +35,7 @@ while (not GPIO.event_detected(READY_pin)):
 
 # HUMIDITY
 
-# Read the humidity value from the Sense board
+# Read the humidity value from the Metriful board
 raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, H_READ, H_BYTES)
 
 # Decode the humidity: the first byte is the integer part, the 
@@ -50,7 +50,7 @@ print("Humidity = " + str(humidity_integer) + "." + str(humidity_fraction) + " %
 
 # TEMPERATURE
 
-# Read the temperature value from the Sense board
+# Read the temperature value from the Metriful board
 raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, T_READ, T_BYTES)
 
 # Decode and print the temperature:

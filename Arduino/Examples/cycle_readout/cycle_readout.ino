@@ -1,7 +1,7 @@
 /* 
    cycle_readout.ino
 
-   Example code for using the Sense board in cycle mode. 
+   Example code for using the Metriful board in cycle mode. 
    
    Continually measures and displays all environmental data in 
    a repeating cycle. User can choose from a cycle time period 
@@ -10,10 +10,10 @@
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 */
 
-#include <Metriful_Sense.h>
+#include <Metriful_sensor.h>
 #include <stdint.h>
 
 //////////////////////////////////////////////////////////
@@ -22,7 +22,7 @@
 // How often to read data (every 3, 100, 300 seconds)
 uint8_t cycle_period = CYCLE_PERIOD_3_S;
 
-// The I2C address of the Sense board
+// The I2C address of the Metriful board
 uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
 
 // Whether to read the particle data (set false if no PPD42 particle 
@@ -51,9 +51,9 @@ ParticleData_t particleData = {0};
 
 void setup() {  
   // Initialize the Arduino pins, set up the serial port and reset:
-  SenseHardwareSetup(i2c_7bit_address); 
+  SensorHardwareSetup(i2c_7bit_address); 
   
-  // Apply chosen settings to the Sense board
+  // Apply chosen settings to the Metriful board
   if (getParticulateData) {
     transmit_buffer[0] = ENABLED;
     TransmitI2C(i2c_7bit_address, PARTICLE_SENSOR_ENABLE_REG, transmit_buffer, 1);
@@ -75,7 +75,7 @@ void loop() {
   while (!ready_assertion_event) {}
   ready_assertion_event = false;
 
-  /* Read data from Sense into the data structs. 
+  /* Read data from Metriful into the data structs. 
   For each category of data (air, sound, etc.) a pointer to the data struct is 
   passed to the ReceiveI2C() function. The received byte sequence fills the data 
   struct in the correct order so that each field within the struct receives

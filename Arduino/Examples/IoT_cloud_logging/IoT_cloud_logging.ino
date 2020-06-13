@@ -1,7 +1,7 @@
 /* 
    IoT_cloud_logging.ino
    
-   Example IoT data logging code for the Sense board. 
+   Example IoT data logging code for the Metriful board. 
    
    This example is designed for the Arduino Nano 33 IoT only.
    Environmental data values are measured and logged to an internet 
@@ -12,10 +12,10 @@
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 */
 
-#include <Metriful_Sense.h>
+#include <Metriful_sensor.h>
 #include <stdint.h>
 #include <SPI.h>
 #include <WiFiNINA.h>
@@ -28,7 +28,7 @@
 // be set to 100 or 300 seconds, not 3 seconds.
 uint8_t cycle_period = CYCLE_PERIOD_100_S;
 
-// The I2C address of the Sense board
+// The I2C address of the Metriful board
 uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
 
 // Whether to read the particle data (set false if no PPD42 particle 
@@ -92,7 +92,7 @@ uint8_t transmit_buffer[LIGHT_INTERRUPT_THRESHOLD_BYTES] = {0};
 
 void setup() {
   // Initialize the Arduino pins, set up the serial port and reset:
-  SenseHardwareSetup(i2c_7bit_address); 
+  SensorHardwareSetup(i2c_7bit_address); 
 
   // attempt to connect to the Wifi network:
   int32_t status = WL_IDLE_STATUS;
@@ -117,7 +117,7 @@ void setup() {
   
   ////////////////////////////////////////////////////////////////////
   
-  // Apply chosen settings to the Sense board
+  // Apply chosen settings to the Metriful board
   if (getParticleData) {
     transmit_buffer[0] = ENABLED;
     TransmitI2C(i2c_7bit_address, PARTICLE_SENSOR_ENABLE_REG, transmit_buffer, 1);
@@ -136,7 +136,7 @@ void loop() {
   while (!ready_assertion_event) {}
   ready_assertion_event = false;
 
-  /* Read data from Sense into the data structs. 
+  /* Read data from Metriful into the data structs. 
   For each category of data (air, sound, etc.) a pointer to the data struct is 
   passed to the ReceiveI2C() function. The received byte sequence fills the 
   struct in the correct order so that each field within the struct receives

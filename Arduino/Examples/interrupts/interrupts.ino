@@ -1,7 +1,7 @@
 /* 
    interrupts.ino
 
-   Example code for using the Sense board interrupts. 
+   Example code for using the Metriful board interrupts. 
    
    Light and sound interrupts are configured and the program then 
    waits indefinitely. When an interrupt occurs, a message is 
@@ -12,10 +12,10 @@
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 */
 
-#include <Metriful_Sense.h>
+#include <Metriful_sensor.h>
 #include <stdint.h>
 
 //////////////////////////////////////////////////////////
@@ -43,7 +43,7 @@ bool enableSoundInterrupts = true;
 uint8_t sound_int_type = SOUND_INT_TYPE_LATCH;
 uint16_t sound_thres_mPa = 100;
 
-// The I2C address of the Sense board
+// The I2C address of the Metriful board
 uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
 
 // END OF USER-EDITABLE SETTINGS
@@ -56,7 +56,7 @@ uint8_t receive_buffer[SOUND_DATA_BYTES] = {0};
 
 void setup() {  
   // Initialize the Arduino pins, set up the serial port and reset:
-  SenseHardwareSetup(i2c_7bit_address); 
+  SensorHardwareSetup(i2c_7bit_address); 
   
   // check that the chosen light threshold is a valid value 
   if (light_int_thres_lux_i > MAX_LUX_VALUE) {
@@ -78,7 +78,7 @@ void setup() {
     transmit_buffer[1] = sound_thres_mPa >> 8;
     TransmitI2C(i2c_7bit_address, SOUND_INTERRUPT_THRESHOLD_REG, transmit_buffer, 
                 SOUND_INTERRUPT_THRESHOLD_BYTES);
-    // Enable the interrupt on the Sense board:
+    // Enable the interrupt on the Metriful board:
     transmit_buffer[0] = ENABLED;
     TransmitI2C(i2c_7bit_address, SOUND_INTERRUPT_ENABLE_REG, transmit_buffer, 1);
   }
@@ -97,7 +97,7 @@ void setup() {
     // Set the interrupt polarity
     transmit_buffer[0] = light_int_polarity;
     TransmitI2C(i2c_7bit_address, LIGHT_INTERRUPT_POLARITY_REG, transmit_buffer, 1);
-    // Enable the interrupt on the Sense board:
+    // Enable the interrupt on the Metriful board:
     transmit_buffer[0] = ENABLED;
     TransmitI2C(i2c_7bit_address, LIGHT_INTERRUPT_ENABLE_REG, transmit_buffer, 1);
   }

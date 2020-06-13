@@ -2,7 +2,7 @@
    Arduino_pin_definitions.h
 
    This file defines which Arduino pins are used to interface to the 
-   Sense board and which library is used for I2C communications.
+   Metriful board and which library is used for I2C communications.
 
    The relevant section in this file is selected automatically when 
    the Arduino board is chosen in the Arduino IDE. The Arduino 
@@ -12,7 +12,7 @@
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 */
 
 #ifndef ARDUINO_PIN_DEFINITIONS_H
@@ -30,16 +30,16 @@
   #define L_INT_PIN 4   // Arduino digital pin 4 connects to LIT
   #define S_INT_PIN 7   // Arduino digital pin 7 connects to SIT
   /* In addition to these pins, the following I2C bus and power 
-   connections must be made to the Sense board when
+   connections must be made to the Metriful board when
    using the Arduino Uno (a 5V system): 
-   Arduino pins GND, SCL, SDA to Sense board pins GND, SCL, SDA
+   Arduino pins GND, SCL, SDA to Metriful board pins GND, SCL, SDA
    Arduino pin 5V to VPU and VIN
-   Sense pin VDD is unused
+   Metriful pin VDD is unused
    
    If a PPD42 particle sensor is used, also connect the following:
    Arduino pin 5V to PPD42 pin 3
    Arduino pin GND to PPD42 pin 1
-   PPD42 pin 4 to Sense pin PRT
+   PPD42 pin 4 to Metriful pin PRT
    
    For further details, see the readme and User Guide
   */
@@ -59,16 +59,16 @@
   #define SOFT_SDA A0   // Arduino pin A0 connects to SDA
   #define SOFT_SCL A3   // Arduino pin A3 connects to SCL
   /* In addition to these pins, the following I2C bus and power 
-   connections must be made to the Sense board when
+   connections must be made to the Metriful board when
    using the Arduino Nano 33 IoT (a 3.3V system): 
-   Arduino pin GND to Sense board GND
+   Arduino pin GND to Metriful board GND
    Arduino pin 3.3V to VPU and VDD
-   Sense pin VIN is unused
+   Metriful pin VIN is unused
    
    If a PPD42 particle sensor is used, also connect the following:
    Arduino pin VUSB to PPD42 pin 3
    Arduino pin GND to PPD42 pin 1
-   PPD42 pin 4 to Sense pin PRT
+   PPD42 pin 4 to Metriful pin PRT
    The solder bridge labeled "VUSB" on the underside of the Arduino 
    must be soldered closed to provide 5V to the PPD42.
    

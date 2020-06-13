@@ -1,6 +1,6 @@
 #  cycle_readout.py
 
-#  Example code for using the Sense board in cycle mode. 
+#  Example code for using the Metriful board in cycle mode. 
 #  This example is designed to run with Python 3 on a Raspberry Pi.
    
 #  Continually measures and displays all environmental data in a 
@@ -10,9 +10,9 @@
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 
-from Sense_functions import *
+from sensor_functions import *
 
 #########################################################
 # USER-EDITABLE SETTINGS
@@ -33,7 +33,7 @@ print_data_as_columns = False
 #########################################################
 
 # Set up the GPIO and I2C communications bus
-(GPIO, I2C_bus) = SenseHardwareSetup()
+(GPIO, I2C_bus) = SensorHardwareSetup()
 
 # Apply the chosen settings
 if (get_particle_data):
@@ -47,7 +47,7 @@ print("Entering cycle mode and waiting for data. Press ctrl-c to exit.")
 # Tell the Pi to monitor READY for a falling edge event (high-to-low voltage change)
 GPIO.add_event_detect(READY_pin, GPIO.FALLING) 
 
-# Tell Sense to enter cycle mode
+# Tell the Metriful board to enter cycle mode
 I2C_bus.write_byte(i2c_7bit_address, CYCLE_MODE_CMD)
 
 while (True):

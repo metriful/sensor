@@ -1,6 +1,6 @@
 #  simple_read_sound.py
 
-#  Example code for using the Sense board to measure sound. 
+#  Example code for using the Metriful board to measure sound. 
 #  This example is designed to run with Python 3 on a Raspberry Pi.
    
 #  Waits for microphone initialization, then measures and displays 
@@ -9,20 +9,20 @@
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 
 from time import sleep
-from Sense_functions import *
+from sensor_functions import *
 
 # Set up the GPIO and I2C communications bus
-(GPIO, I2C_bus) = SenseHardwareSetup()
+(GPIO, I2C_bus) = SensorHardwareSetup()
 
 #########################################################
 
 # Wait for the microphone to stabilize (takes approximately 1.5 seconds). 
 # The microphone uses a filter which should be allowed to settle before 
 # sound data are measured. 
-# This only needs to be done once after Sense is powered-on or reset. 
+# This only needs to be done once after Metriful is powered-on or reset. 
 
 mic_stable = False
 while (not mic_stable):

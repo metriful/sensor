@@ -1,18 +1,18 @@
 /*
-   Sense_constants.h
+   sensor_constants.h
 
    This file defines constant values and data structures which are used 
-   in the control of the Sense board and the interpretation of its output 
-   data. All values have been taken from the Sense datasheet.
+   in the control of the Metriful board and the interpretation of its output 
+   data. All values have been taken from the Metriful datasheet.
 
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sense
+   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
 */
 
-#ifndef SENSE_CONSTANTS_H
-#define SENSE_CONSTANTS_H
+#ifndef SENSOR_CONSTANTS_H
+#define SENSOR_CONSTANTS_H
 
 #include <stdint.h>
 
