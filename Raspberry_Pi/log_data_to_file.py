@@ -1,9 +1,9 @@
 #  log_data_to_file.py
    
-#  Example file data logging code for the Metriful board. 
+#  Example file data logging code for the Metriful MS430. 
 #  This example is designed to run with Python 3 on a Raspberry Pi.
    
-#  All environmental data values are measured and saved as columns 
+#  All environment data values are measured and saved as columns 
 #  of numbers in a text file (one row of data every three seconds). 
 #  This type of file can be imported into various graph and spreadsheet 
 #  applications. To prevent very large file sizes, a new file is 
@@ -12,7 +12,8 @@
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
+#  For code examples, datasheet and user guide, visit 
+#  https://github.com/metriful/sensor
 
 import datetime
 from sensor_functions import *
@@ -28,14 +29,13 @@ print_to_screen = True
 # Number of lines of data to log in each file before starting a new file
 # (required if log_to_file == True), and which directory to save them in.
 lines_per_file = 300
-data_file_directory = "/home/pi"
+data_file_directory = "/home/pi/Desktop"
 
 # How often to measure and read data (every 3, 100, 300 seconds):
 cycle_period = CYCLE_PERIOD_3_S 
 
-# Whether to read the particle data (set False if no PPD42 particle 
-# sensor is connected, to avoid seeing spurious data).
-get_particle_data = True
+# Which particle sensor, if any, is attached (PPD42, SDS011, or OFF)
+particleSensor = PARTICLE_SENSOR_OFF
 
 # END OF USER-EDITABLE SETTINGS
 #########################################################
@@ -44,8 +44,8 @@ get_particle_data = True
 (GPIO, I2C_bus) = SensorHardwareSetup()
 
 # Apply the chosen settings to the Metriful board
-if (get_particle_data):
-  I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_ENABLE_REG, [ENABLED])
+if (particleSensor != PARTICLE_SENSOR_OFF):
+  I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [particleSensor])
 I2C_bus.write_i2c_block_data(i2c_7bit_address, CYCLE_TIME_PERIOD_REG, [cycle_period])
 
 #########################################################
@@ -56,10 +56,7 @@ if log_to_file:
 
 print("Entering cycle mode and waiting for data. Press ctrl-c to exit.")
 
-# Tell the Pi to monitor READY for a falling edge event (high-to-low voltage change)
-GPIO.add_event_detect(READY_pin, GPIO.FALLING) 
-
-# Tell Metriful to enter cycle mode
+# Enter cycle mode
 I2C_bus.write_byte(i2c_7bit_address, CYCLE_MODE_CMD)
 
 while (True):
@@ -73,9 +70,9 @@ while (True):
   air_data = extractAirData(raw_data)
   
   # Air quality data
-  # Note that the initial self-calibration of the air quality data 
-  # takes a few minutes to complete. During this time the accuracy 
-  # parameter is zero and the data values do not change.
+  # The initial self-calibration of the air quality data may take several
+  # minutes to complete. During this time the accuracy parameter is zero 
+  # and the data values are not valid.
   raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, AIR_QUALITY_DATA_READ, AIR_QUALITY_DATA_BYTES)
   air_quality_data = extractAirQualityData(raw_data)
     
@@ -88,14 +85,13 @@ while (True):
   sound_data = extractSoundData(raw_data)
     
   # Particle data
-  # Note that this requires the connection of a PPD42 particle 
-  # sensor (invalid values will be obtained if this sensor is not
-  # present).
+  # This requires the connection of a particulate sensor (invalid 
+  # values will be obtained if this sensor is not present).
   # Also note that, due to the low pass filtering used, the 
-  # particle data become valid after an initial stabilization 
-  # period of approximately two minutes.
+  # particle data become valid after an initial initialization 
+  # period of approximately one minute.
   raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, PARTICLE_DATA_READ, PARTICLE_DATA_BYTES)
-  particle_data = extractParticleData(raw_data)
+  particle_data = extractParticleData(raw_data, particleSensor)
     
   if (print_to_screen):
     # Display all data on screen as named quantities with units
@@ -109,7 +105,7 @@ while (True):
     print("------------------");
     writeSoundData(None, sound_data, False)
     print("------------------");
-    if (get_particle_data):
+    if (particleSensor != PARTICLE_SENSOR_OFF):
       writeParticleData(None, particle_data, False)
       print("------------------");
       
@@ -127,8 +123,8 @@ while (True):
     writeLightData(datafile, light_data, True)
     # Sound data in columns 17 - 25
     writeSoundData(datafile, sound_data, True)
-    if (get_particle_data):
-      # Particle data in columns 26 - 27
+    if (particleSensor != PARTICLE_SENSOR_OFF):
+      # Particle data in columns 26 - 28
       writeParticleData(datafile, particle_data, True)
     datafile.write("\n")
     datafile.flush()

@@ -1,16 +1,17 @@
 #  sensor_constants.py
 
 #  This file defines constant values which are used in the control 
-#  of the Metriful board and the interpretation of its output data.
-#  All values have been taken from the Metriful sensor datasheet.
+#  of the Metriful MS430 board and the interpretation of its output data.
+#  All values have been taken from the MS430 datasheet.
 
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
+#  For code examples, datasheet and user guide, visit 
+#  https://github.com/metriful/sensor
 
 # Settings registers
-PARTICLE_SENSOR_ENABLE_REG = 0x07 
+PARTICLE_SENSOR_SELECT_REG = 0x07 
 LIGHT_INTERRUPT_ENABLE_REG = 0x81     
 LIGHT_INTERRUPT_THRESHOLD_REG = 0x82  
 LIGHT_INTERRUPT_TYPE_REG = 0x83       
@@ -53,8 +54,9 @@ SPL_READ = 0x41
 SPL_BANDS_READ = 0x42
 SOUND_PEAK_READ = 0x43
 SOUND_STABLE_READ = 0x44
-OCCUPANCY_READ = 0x51
+DUTY_CYCLE_READ = 0x51
 CONCENTRATION_READ = 0x52
+PARTICLE_VALID_READ = 0x53
 
 ###############################################################
 
@@ -102,6 +104,11 @@ LIGHT_INT_POL_NEGATIVE = 1
 TEMPERATURE_VALUE_MASK = 0x7F 
 TEMPERATURE_SIGN_MASK = 0x80 
 
+# Particle sensor module selection:
+PARTICLE_SENSOR_OFF = 0
+PARTICLE_SENSOR_PPD42 = 1
+PARTICLE_SENSOR_SDS011 = 2
+
 ###############################################################
 
 # Byte lengths for each readable data quantity and data category
@@ -128,6 +135,7 @@ SOUND_PEAK_BYTES = 3
 SOUND_STABLE_BYTES = 1
 SOUND_DATA_BYTES = 18
 
-OCCUPANCY_BYTES = 2
-CONCENTRATION_BYTES = 2
-PARTICLE_DATA_BYTES = 4
+DUTY_CYCLE_BYTES = 2
+CONCENTRATION_BYTES = 3
+PARTICLE_VALID_BYTES = 1
+PARTICLE_DATA_BYTES = 6

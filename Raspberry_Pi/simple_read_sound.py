@@ -1,15 +1,15 @@
 #  simple_read_sound.py
 
-#  Example code for using the Metriful board to measure sound. 
+#  Example code for using the Metriful MS430 to measure sound. 
 #  This example is designed to run with Python 3 on a Raspberry Pi.
    
-#  Waits for microphone initialization, then measures and displays 
-#  the sound data.
+#  Measures and displays the sound data once. 
 
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
+#  For code examples, datasheet and user guide, visit 
+#  https://github.com/metriful/sensor
 
 from time import sleep
 from sensor_functions import *
@@ -19,22 +19,11 @@ from sensor_functions import *
 
 #########################################################
 
-# Wait for the microphone to stabilize (takes approximately 1.5 seconds). 
-# The microphone uses a filter which should be allowed to settle before 
-# sound data are measured. 
-# This only needs to be done once after Metriful is powered-on or reset. 
-
-mic_stable = False
-while (not mic_stable):
-  # The sound_stable register is set to a non-zero value when the microphone has initialized
-  byte_value = I2C_bus.read_i2c_block_data(i2c_7bit_address, SOUND_STABLE_READ, SOUND_STABLE_BYTES)
-  mic_stable = (byte_value[0] != 0)
-  sleep(0.05)
+# Wait for the microphone signal to stabilize (takes approximately 1.5 seconds). 
+# This only needs to be done once after the MS430 is powered-on or reset.
+sleep(1.5);
 
 #########################################################
-
-# Tell the Pi to monitor READY for a falling edge event (high-to-low voltage change)
-GPIO.add_event_detect(READY_pin, GPIO.FALLING) 
 
 # Initiate an on-demand data measurement
 I2C_bus.write_byte(i2c_7bit_address, ON_DEMAND_MEASURE_CMD)
@@ -63,7 +52,7 @@ for i in range(0,SOUND_FREQ_BANDS):
 print("Peak sound amplitude = {:.2f} mPa".format(sound_data['peak_amp_mPa']))
 
 # Or just use the following function for printing:
-# writeSoundData(None, sound_data, False)
+writeSoundData(None, sound_data, False)
 
 #########################################################
 

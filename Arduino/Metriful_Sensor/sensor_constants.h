@@ -2,13 +2,14 @@
    sensor_constants.h
 
    This file defines constant values and data structures which are used 
-   in the control of the Metriful board and the interpretation of its output 
-   data. All values have been taken from the Metriful datasheet.
+   in the control of the Metriful MS430 board and the interpretation of
+   its output data. All values have been taken from the MS430 datasheet.
 
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
+   For code examples, datasheet and user guide, visit 
+   https://github.com/metriful/sensor
 */
 
 #ifndef SENSOR_CONSTANTS_H
@@ -20,7 +21,7 @@
 // Register and command addresses:
 
 // Settings registers
-#define PARTICLE_SENSOR_ENABLE_REG 0x07 
+#define PARTICLE_SENSOR_SELECT_REG 0x07
 
 #define LIGHT_INTERRUPT_ENABLE_REG 0x81     
 #define LIGHT_INTERRUPT_THRESHOLD_REG 0x82  
@@ -70,8 +71,9 @@
 #define SOUND_PEAK_READ 0x43
 #define SOUND_STABLE_READ 0x44
 
-#define OCCUPANCY_READ 0x51
+#define DUTY_CYCLE_READ 0x51
 #define CONCENTRATION_READ 0x52
+#define PARTICLE_VALID_READ 0x53
 
 ///////////////////////////////////////////////////////////
 
@@ -120,6 +122,11 @@ static const uint16_t sound_band_edges_Hz[SOUND_FREQ_BANDS+1] = {88, 177, 354, 7
 #define TEMPERATURE_VALUE_MASK 0x7F
 #define TEMPERATURE_SIGN_MASK  0x80
 
+// Particle sensor module selection:
+#define PARTICLE_SENSOR_OFF    0
+#define PARTICLE_SENSOR_PPD42  1
+#define PARTICLE_SENSOR_SDS011 2
+
 ///////////////////////////////////////////////////////////
 
 // Structs for accessing individual data quantities after reading a category of data
@@ -160,9 +167,11 @@ typedef struct __attribute__((packed)) {
 } SoundData_t;
 
 typedef struct __attribute__((packed)) {
-  uint8_t  occupancy_pc_int;
-  uint8_t  occupancy_pc_fr_2dp;
-  uint16_t concentration_ppL;
+  uint8_t  duty_cycle_pc_int;
+  uint8_t  duty_cycle_pc_fr_2dp;
+  uint16_t concentration_int;
+  uint8_t  concentration_fr_2dp;
+  uint8_t  valid;
 } ParticleData_t;
 
 ///////////////////////////////////////////////////////////
@@ -191,8 +200,9 @@ typedef struct __attribute__((packed)) {
 #define SOUND_STABLE_BYTES  1
 #define SOUND_DATA_BYTES    sizeof(SoundData_t)
 
-#define OCCUPANCY_BYTES      2
-#define CONCENTRATION_BYTES  2
+#define DUTY_CYCLE_BYTES     2
+#define CONCENTRATION_BYTES  3
+#define PARTICLE_VALID_BYTES 1
 #define PARTICLE_DATA_BYTES  sizeof(ParticleData_t)
 
 #endif

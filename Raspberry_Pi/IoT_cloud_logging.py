@@ -1,17 +1,18 @@
 #  IoT_cloud_logging.py
    
-#  Example IoT data logging code for the Metriful board. 
+#  Example IoT data logging code for the Metriful MS430. 
 #  This example is designed to run with Python 3 on a Raspberry Pi.
    
 #  Environmental data values are measured and logged to an internet 
 #  cloud account every 100 seconds. The example gives the choice of 
 #  using either the Tago.io or Thingspeak.com cloud - both of these 
-#  offer a free account for low data rates (compatible with this demo). 
+#  offer a free account for low data rates. 
 
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
+#  For code examples, datasheet and user guide, visit 
+#  https://github.com/metriful/sensor
 
 import requests
 from sensor_functions import *
@@ -20,27 +21,26 @@ from sensor_functions import *
 # USER-EDITABLE SETTINGS
 
 # How often to read and log data (every 3, 100, 300 seconds)
-# Note that due to data rate limits on free cloud services, this should 
+# Note: due to data rate limits on free cloud services, this should 
 # be set to 100 or 300 seconds, not 3 seconds.
 cycle_period = CYCLE_PERIOD_100_S
 
-# Whether to read the particle data (set False if no PPD42 particle 
-# sensor is connected, to avoid seeing spurious data).
-get_particle_data = True
+# Which particle sensor, if any, is attached (PPD42, SDS011, or OFF)
+particleSensor = PARTICLE_SENSOR_OFF
 
 # IoT cloud settings.
-# This example demonstrates use of the free IoT cloud hosting 
-# services provided by Tago.io or Thingspeak.com
+# This example uses the free IoT cloud hosting services provided 
+# by Tago.io or Thingspeak.com
 # Other free cloud providers are available.
 # An account must have been set up with the relevant cloud provider and 
-# an internet connection must exist. See the accompanying readme and 
-# User Guide for more information.
+# an internet connection to the Pi must exist. See the accompanying 
+# readme and User Guide for more information.
 
 # Choose which provider to use
 use_Tago_cloud = True 
 # To use the ThingSpeak cloud, set: use_Tago_cloud=False
 
-# The chosen account's key/token must be put into the relevant settings information below.  
+# The chosen account's key/token must be inserted below.  
 if (use_Tago_cloud):
   # settings for Tago.io cloud
   TAGO_DEVICE_TOKEN_STRING = "PASTE YOUR TOKEN HERE WITHIN QUOTES"
@@ -55,8 +55,8 @@ else:
 (GPIO, I2C_bus) = SensorHardwareSetup()
 
 # Apply the chosen settings to the Metriful board
-if (get_particle_data):
-  I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_ENABLE_REG, [ENABLED])
+if (particleSensor != PARTICLE_SENSOR_OFF):
+  I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [particleSensor])
 I2C_bus.write_i2c_block_data(i2c_7bit_address, CYCLE_TIME_PERIOD_REG, [cycle_period])
 
 #########################################################
@@ -73,10 +73,7 @@ else:
 
 print("Logging data. Press ctrl-c to exit.")
 
-# Tell the Pi to monitor READY for a falling edge event (high-to-low voltage change)
-GPIO.add_event_detect(READY_pin, GPIO.FALLING) 
-
-# Tell Metriful to enter cycle mode
+# Enter cycle mode
 I2C_bus.write_byte(i2c_7bit_address, CYCLE_MODE_CMD)
 
 while (True):
@@ -92,9 +89,9 @@ while (True):
   air_data = extractAirData(raw_data)
   
   # Air quality data
-  # Note that the initial self-calibration of the air quality data 
-  # takes a few minutes to complete. During this time the accuracy 
-  # parameter is zero and the data values do not change.
+  # The initial self-calibration of the air quality data may take several
+  # minutes to complete. During this time the accuracy parameter is zero 
+  # and the data values are not valid.
   raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, AIR_QUALITY_DATA_READ, AIR_QUALITY_DATA_BYTES)
   air_quality_data = extractAirQualityData(raw_data)
     
@@ -107,21 +104,33 @@ while (True):
   sound_data = extractSoundData(raw_data)
     
   # Particle data
-  # Note that this requires the connection of a PPD42 particle 
-  # sensor (invalid values will be obtained if this sensor is not
-  # present).
+  # This requires the connection of a particulate sensor (invalid 
+  # values will be obtained if this sensor is not present).
   # Also note that, due to the low pass filtering used, the 
-  # particle data become valid after an initial stabilization 
-  # period of approximately two minutes.
+  # particle data become valid after an initial initialization 
+  # period of approximately one minute.
   raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, PARTICLE_DATA_READ, PARTICLE_DATA_BYTES)
-  particle_data = extractParticleData(raw_data)
+  particle_data = extractParticleData(raw_data, particleSensor)
     
   # Assemble the data into the required format, then send it to the cloud
-  # as an HTTP POST request. Limit the number of decimal places for the
-  # variables which are not integers.
+  # as an HTTP POST request.
+  
+  # For both example cloud providers, the following quantities will be sent:
+  # 1 Temperature/C
+  # 2 Pressure/Pa
+  # 3 Humidity/%
+  # 4 Air quality index
+  # 5 bVOC/ppm
+  # 6 SPL/dBA
+  # 7 Illuminance/lux
+  # 8 Particle concentration
+  
+  # Additionally, for Tago, the following is sent:
+  # 9  Air Quality Assessment summary (Good, Bad, etc.) 
+  # 10 Peak sound amplitude / mPa 
+  
   try:
     if use_Tago_cloud:
-      # Use Tago.io cloud
       payload = [0]*10;
       payload[0] = {"variable":"temperature","value":"{:.1f}".format(air_data['T_C'])}
       payload[1] = {"variable":"pressure","value":air_data['P_Pa']}
@@ -132,7 +141,7 @@ while (True):
       payload[6] = {"variable":"spl","value":"{:.1f}".format(sound_data['SPL_dBA'])}
       payload[7] = {"variable":"peak_amp","value":"{:.2f}".format(sound_data['peak_amp_mPa'])}
       payload[8] = {"variable":"illuminance","value":"{:.2f}".format(light_data['illum_lux'])}
-      payload[9] = {"variable":"particulates","value":particle_data['conc_ppL']}
+      payload[9] = {"variable":"particulates","value":"{:.2f}".format(particle_data['concentration'])}
       requests.post(tago_url, json=payload, headers=tago_header, timeout=2)
     else:
       # Use ThingSpeak.com cloud
@@ -144,7 +153,7 @@ while (True):
       payload += "&field5=" + "{:.2f}".format(air_quality_data['bVOC'])
       payload += "&field6=" + "{:.1f}".format(sound_data['SPL_dBA'])
       payload += "&field7=" + "{:.2f}".format(light_data['illum_lux'])
-      payload += "&field8=" + str(particle_data['conc_ppL'])
+      payload += "&field8=" + "{:.2f}".format(particle_data['concentration'])
       requests.post(thingspeak_url, data=payload, headers=thingspeak_header, timeout=2)
       
   except:

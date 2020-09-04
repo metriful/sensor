@@ -6,7 +6,8 @@
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
+#  For code examples, datasheet and user guide, visit 
+#  https://github.com/metriful/sensor
 
 import sys
 from time import sleep
@@ -29,16 +30,21 @@ READY_pin = 11    # Raspberry Pi pin 11 connects to RDY
 # Raspberry Pi pin 5 to SCL
 # Raspberry Pi pin 6 to GND (0 V)
 # Raspberry Pi pin 1 to VDD and VPU (3.3 V)
-# Metriful pin VIN is not used.
+# MS430 pin VIN is not used.
 #
-# If a PPD42 particle sensor is used, also connect the following:
+# If a PPD42 particle sensor is used, connect the following:
 # Raspberry Pi pin 2 to PPD42 pin 3
 # Raspberry Pi pin 9 to PPD42 pin 1
-# PPD42 pin 4 to Metriful pin PRT
+# PPD42 pin 4 to MS430 pin PRT
+#
+# If an SDS011 particle sensor is used, connect the following:
+# Raspberry Pi pin 2 to SDS011 pin "5V"
+# Raspberry Pi pin 9 to SDS011 pin "GND"
+# SDS011 pin "25um" to MS430 pin PRT
 #
 # For further details, see the readme and User Guide
 
-# The I2C address of the Metriful board
+# The I2C address of the Metriful MS430 board
 i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN 
 
 ##########################################################################################
@@ -54,17 +60,20 @@ def SensorHardwareSetup():
   # Initialize the I2C communications bus object
   I2C_bus = smbus.SMBus(1) # Port 1 is the default for I2C on Raspberry Pi    
 
-  # Wait for Metriful to finish power-on initialization:
+  # Wait for the MS430 to finish power-on initialization:
   while (GPIO.input(READY_pin) == 1):
     sleep(0.05)
     
-  # Reset Metriful to clear any previous state:
+  # Reset MS430 to clear any previous state:
   I2C_bus.write_byte(i2c_7bit_address, RESET_CMD)
   sleep(0.005)
   
   # Wait for reset completion and entry to standby mode
   while (GPIO.input(READY_pin) == 1):
     sleep(0.05)
+  
+  # Tell the Pi to monitor READY for a falling edge event (high-to-low voltage change)
+  GPIO.add_event_detect(READY_pin, GPIO.FALLING) 
   
   return (GPIO, I2C_bus)
 
@@ -87,6 +96,7 @@ def extractAirData(rawData):
             + (rawData[9] << 8) + rawData[8])
   return airData
 
+
 def extractAirQualityData(rawData):
   if (len(rawData) != AIR_QUALITY_DATA_BYTES):
     raise Exception('Incorrect number of Air Quality Data bytes')
@@ -96,7 +106,8 @@ def extractAirQualityData(rawData):
   airQualityData['bVOC'] = rawData[6] + (rawData[7] << 8) + (float(rawData[8])/100.0)
   airQualityData['AQI_accuracy'] = rawData[9]
   return airQualityData
-  
+
+
 def extractLightData(rawData):
   if (len(rawData) != LIGHT_DATA_BYTES):
     raise Exception('Incorrect number of Light Data bytes supplied to function')
@@ -104,7 +115,8 @@ def extractLightData(rawData):
   lightData['illum_lux'] =  rawData[0] + (rawData[1] << 8) + (float(rawData[2])/100.0)
   lightData['white'] = rawData[3] + (rawData[4] << 8)
   return lightData
-  
+
+
 def extractSoundData(rawData):
   if (len(rawData) != SOUND_DATA_BYTES):
     raise Exception('Incorrect number of Sound Data bytes supplied to function')
@@ -119,12 +131,21 @@ def extractSoundData(rawData):
   soundData['stable'] = rawData[j+3]
   return soundData
 
-def extractParticleData(rawData):
+
+def extractParticleData(rawData, particleSensor):
   if (len(rawData) != PARTICLE_DATA_BYTES):
     raise Exception('Incorrect number of Particle Data bytes supplied to function')
-  particleData = {'occupancy_pc':0, 'conc_ppL':0}
-  particleData['occupancy_pc'] =  rawData[0] + (float(rawData[1])/100.0)
-  particleData['conc_ppL'] =  rawData[2] + (rawData[3] << 8) 
+  particleData = {'duty_cycle_pc':0, 'concentration':0, 'conc_unit':"", 'valid':False}
+  particleData['duty_cycle_pc'] =  rawData[0] + (float(rawData[1])/100.0)
+  particleData['concentration'] =  rawData[2] + (rawData[3] << 8) + (float(rawData[4])/100.0)
+  if (rawData[5] > 0):
+    particleData['valid'] = True
+  if (particleSensor == PARTICLE_SENSOR_PPD42):
+    particleData['conc_unit'] = "ppL"
+  elif (particleSensor == PARTICLE_SENSOR_SDS011):
+    particleData['conc_unit'] = "ug/m3"
+  else:
+    particleData['conc_unit'] = "(?)"
   return particleData
 
 ##########################################################################################
@@ -133,13 +154,14 @@ def extractParticleData(rawData):
 # the air quality measurements (applies to all air quality data) 
 def interpret_AQI_accuracy(AQI_accuracy_code):
   if (AQI_accuracy_code == 1):
-    return "Low Accuracy, Calibration Ongoing";
+    return "Low Accuracy, Self-calibration Ongoing";
   elif (AQI_accuracy_code == 2):
-    return "Medium Accuracy, Calibration Ongoing";
+    return "Medium Accuracy, Self-calibration Ongoing";
   elif (AQI_accuracy_code == 3):
     return "High Accuracy";
   else:
-    return "Not Valid, Calibration Incomplete";
+    return "Not Yet Valid, Self-calibration Incomplete";
+
 
 # Provide a readable interpretation of the AQI (air quality index) 
 def interpret_AQI_value(AQI):
@@ -187,7 +209,8 @@ def writeAirData(textFileObject, airData, writeAsColumns):
     textFileObject.write("Pressure = " + str(airData['P_Pa']) + " Pa\n")
     textFileObject.write("Humidity = {:.1f} %\n".format(airData['H_pc']))
     textFileObject.write("Gas Sensor Resistance = " + str(airData['G_ohm']) + " ohm\n")
-  
+
+
 # Air quality data column order is:
 # Air Quality Index, Estimated CO2/ppm, Equivalent breath VOC/ppm, Accuracy
 def writeAirQualityData(textFileObject, airQualityData, writeAsColumns):
@@ -199,13 +222,15 @@ def writeAirQualityData(textFileObject, airQualityData, writeAsColumns):
     textFileObject.write("{:.2f} ".format(airQualityData['bVOC']))
     textFileObject.write(str(airQualityData['AQI_accuracy']) + " ")
   else:
-    textFileObject.write("Air Quality Index = {:.1f}".format(airQualityData['AQI']) 
-          + " (" + interpret_AQI_value(airQualityData['AQI']) + ")\n")
-    textFileObject.write("Estimated CO2 = {:.1f} ppm\n".format(airQualityData['CO2e']))
-    textFileObject.write("Equivalent Breath VOC = {:.2f} ppm\n".format(airQualityData['bVOC']))
+    if (airQualityData['AQI_accuracy'] > 0):
+      textFileObject.write("Air Quality Index = {:.1f}".format(airQualityData['AQI']) 
+            + " (" + interpret_AQI_value(airQualityData['AQI']) + ")\n")
+      textFileObject.write("Estimated CO2 = {:.1f} ppm\n".format(airQualityData['CO2e']))
+      textFileObject.write("Equivalent Breath VOC = {:.2f} ppm\n".format(airQualityData['bVOC']))
     textFileObject.write("Air Quality Accuracy: " + 
           interpret_AQI_accuracy(airQualityData['AQI_accuracy']) + "\n")
   
+
 # Light data column order is:
 # Illuminance/lux, white light level
 def writeLightData(textFileObject, lightData, writeAsColumns):
@@ -217,6 +242,7 @@ def writeLightData(textFileObject, lightData, writeAsColumns):
   else:
     textFileObject.write("Illuminance = {:.2f} lux\n".format(lightData['illum_lux']))
     textFileObject.write("White Light Level = " + str(lightData['white']) + "\n")
+
 
 # Sound data column order is:
 # Sound pressure level/dBA, Sound pressure level for frequency bands 1 to 6 (six columns), 
@@ -236,22 +262,28 @@ def writeSoundData(textFileObject, soundData, writeAsColumns):
       textFileObject.write("Frequency Band " + str(i+1) + " (" + str(sound_band_mids_Hz[i]) 
           + " Hz) SPL = {:.1f} dB\n".format(soundData['SPL_bands_dB'][i]))
     textFileObject.write("Peak Sound Amplitude = {:.2f} mPa\n".format(soundData['peak_amp_mPa']))
-    if (soundData['stable'] == 0):
-      textFileObject.write("Microphone Initialized: No\n")
-    else:
-      textFileObject.write("Microphone Initialized: Yes\n")
-  
+
+ 
 # Particle data column order is:
-# Sensor occupancy/%, particle concentration/ppL
+# Sensor duty cycle/%, particle concentration
 def writeParticleData(textFileObject, particleData, writeAsColumns):
   if (textFileObject is None):
     textFileObject = sys.stdout
   if (writeAsColumns):
-    textFileObject.write("{:.2f} ".format(particleData['occupancy_pc']))
-    textFileObject.write(str(particleData['conc_ppL']) + " ")
+    textFileObject.write("{:.2f} ".format(particleData['duty_cycle_pc']))
+    textFileObject.write("{:.2f} ".format(particleData['concentration']))
+    if (particleData['valid']):
+      textFileObject.write("1 ")
+    else:
+      textFileObject.write("0 ")
   else:
-    textFileObject.write("Particle Occupancy = {:.2f} %\n".format(particleData['occupancy_pc']))
-    textFileObject.write("Particle Concentration = " + str(particleData['conc_ppL']) + " ppL\n")
+    textFileObject.write("Particle Sensor Duty Cycle = {:.2f} %\n".format(particleData['duty_cycle_pc']))
+    textFileObject.write("Particle Concentration = {:.2f} ".format(particleData['concentration']))
+    textFileObject.write(particleData['conc_unit'] + "\n")
+    if (particleData['valid'] == 0):
+      textFileObject.write("Particle data valid: No (Initializing)\n")
+    else:
+      textFileObject.write("Particle data valid: Yes\n")
 
 ##########################################################################################
 
@@ -261,3 +293,26 @@ def startNewDataFile(dataFileDirectory):
   filename = os.path.join(dataFileDirectory,datetime.datetime.now().strftime('data_%Y-%m-%d_%H-%M-%S.txt'))
   print("Logging data to file " + filename)
   return open(filename, 'a')
+
+##########################################################################################
+
+# Set the threshold for triggering a sound interrupt.
+#
+# sound_thres_mPa = peak sound amplitude threshold in milliPascals, any 16-bit integer is allowed.
+def setSoundInterruptThreshold(I2C_bus, sound_thres_mPa):
+  # The 16-bit threshold value is split and sent as two 8-bit values: [LSB, MSB]
+  data_to_send = [(sound_thres_mPa & 0x00FF), (sound_thres_mPa >> 8)]
+  I2C_bus.write_i2c_block_data(i2c_7bit_address, SOUND_INTERRUPT_THRESHOLD_REG, data_to_send)
+
+
+# Set the threshold for triggering a light interrupt.
+#
+# The threshold value in lux units can be fractional and is formed as:
+#     threshold = light_thres_lux_i + (light_thres_lux_f2dp/100)
+#
+# Threshold values exceeding MAX_LUX_VALUE will be limited to MAX_LUX_VALUE.
+def setLightInterruptThreshold(I2C_bus, light_thres_lux_i, light_thres_lux_f2dp):
+  # The 16-bit integer part of the threshold value is split and sent as two 8-bit values, while
+  # the fractional part is sent as an 8-bit value:
+  data_to_send = [(light_thres_lux_i & 0x00FF), (light_thres_lux_i >> 8), light_thres_lux_f2dp]
+  I2C_bus.write_i2c_block_data(i2c_7bit_address, LIGHT_INTERRUPT_THRESHOLD_REG, data_to_send)

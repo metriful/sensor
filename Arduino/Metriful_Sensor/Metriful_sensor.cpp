@@ -1,17 +1,17 @@
 /* 
    Metriful_sensor.cpp
 
-   This file defines functions which are used in the Metriful code examples.
+   This file defines functions which are used in the code examples.
 
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
+   For code examples, datasheet and user guide, visit 
+   https://github.com/metriful/sensor
 */
 
 #include "Metriful_sensor.h"
-#include "sensor_constants.h"
-#include "Arduino_pin_definitions.h"
+#include "host_pin_definitions.h"
 
 #ifdef ARDUINO_SAMD_NANO_33_IOT
   // The Arduino Nano 33 IoT wifi module prevents the use of the 
@@ -24,12 +24,18 @@
 #define ARDUINO_WIRE_BUFFER_LIMIT_BYTES 32
 
 void SensorHardwareSetup(uint8_t i2c_7bit_address) {
-  // Turn off the built-in LED
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
 
-  // Initialize the I2C module
-  TheWire.begin(); 
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  #ifdef ESP8266
+    // Must specify the I2C pins
+    TheWire.begin(SDA_PIN, SCL_PIN); 
+    digitalWrite(LED_BUILTIN, HIGH);
+  #else
+    TheWire.begin(); 
+    digitalWrite(LED_BUILTIN, LOW);
+  #endif
+  
   TheWire.setClock(I2C_CLK_FREQ_HZ);
 
   // READY, light interrupt and sound interrupt lines are digital inputs.
@@ -46,40 +52,51 @@ void SensorHardwareSetup(uint8_t i2c_7bit_address) {
   // Full settings are: 8 data bits, no parity, one stop bit
   Serial.begin(SERIAL_BAUD_RATE);
   
-  // Wait for Metriful to finish power-on initialization:
-  while (digitalRead(READY_PIN) == HIGH) {} 
+  // Wait for the MS430 to finish power-on initialization:
+  while (digitalRead(READY_PIN) == HIGH) {
+    yield();
+  } 
   
-  // Reset Metriful to clear any previous state:
-  uint8_t tx_buf[1] = {0};
-  TransmitI2C(i2c_7bit_address, RESET_CMD, tx_buf, 0);
+  // Reset to clear any previous state:
+  TransmitI2C(i2c_7bit_address, RESET_CMD, 0, 0);
   delay(5);
   
   // Wait for reset completion and entry to standby mode
-  while (digitalRead(READY_PIN) == HIGH) {} 
+  while (digitalRead(READY_PIN) == HIGH) {
+    yield();
+  } 
 }
 
 volatile bool ready_assertion_event = false;
+
 // This function is automatically called after a falling edge (assertion) of READY.
-void ready_ISR(void) {
-  // Set the flag variable to true; it must be set false again from the main program.
+// The flag variable is set true - it must be set false again in the main program.
+#ifdef ESP8266
+void ICACHE_RAM_ATTR ready_ISR(void) {
   ready_assertion_event = true;
 }
+#else
+void ready_ISR(void) {
+  ready_assertion_event = true;
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 
-// Functions to convert data in integer representation to floating-point representation
-// floats are easy to use for writing programs but require greater memory and processing
-// power resources, so may not always be appropriate on an Arduino.
+// Functions to convert data from integer representation to floating-point representation.
+// Floats are easy to use for writing programs but require greater memory and processing
+// power resources, so may not always be appropriate.
 
 void convertAirDataF(const AirData_t * airData_in, AirData_F_t * airDataF_out) {
   // Decode the signed value for T
   float absoluteValue = ((float) (airData_in->T_C_int_with_sign & TEMPERATURE_VALUE_MASK)) + 
-                        (((float) airData_in->T_C_fr_1dp)/10.0);
+                       (((float) airData_in->T_C_fr_1dp)/10.0);
   if ((airData_in->T_C_int_with_sign & TEMPERATURE_SIGN_MASK) != 0) {
     // the most-significant bit is set, indicating that the temperature is negative
     airDataF_out->T_C = -absoluteValue;
   }
   else {
+    // temperature is positive
     airDataF_out->T_C = absoluteValue;
   }
   airDataF_out->P_Pa = airData_in->P_Pa;
@@ -88,38 +105,40 @@ void convertAirDataF(const AirData_t * airData_in, AirData_F_t * airDataF_out) {
 }
 
 void convertAirQualityDataF(const AirQualityData_t * airQualityData_in, 
-                            AirQualityData_F_t * airQualityDataF_out) {
-  airQualityDataF_out->AQI = ((float) airQualityData_in->AQI_int) + 
+                                AirQualityData_F_t * airQualityDataF_out) {
+  airQualityDataF_out->AQI =  ((float) airQualityData_in->AQI_int) + 
                              (((float) airQualityData_in->AQI_fr_1dp)/10.0);
   airQualityDataF_out->CO2e = ((float) airQualityData_in->CO2e_int) + 
-                              (((float) airQualityData_in->CO2e_fr_1dp)/10.0);
+                             (((float) airQualityData_in->CO2e_fr_1dp)/10.0);
   airQualityDataF_out->bVOC = ((float) airQualityData_in->bVOC_int) + 
-                              (((float) airQualityData_in->bVOC_fr_2dp)/100.0);
+                             (((float) airQualityData_in->bVOC_fr_2dp)/100.0);
   airQualityDataF_out->AQI_accuracy = airQualityData_in->AQI_accuracy;
 }
 
 void convertLightDataF(const LightData_t * lightData_in, LightData_F_t * lightDataF_out) {
   lightDataF_out->illum_lux = ((float) lightData_in->illum_lux_int) + 
-                              (((float) lightData_in->illum_lux_fr_2dp)/100.0);
+                             (((float) lightData_in->illum_lux_fr_2dp)/100.0);
   lightDataF_out->white = lightData_in->white;
 }
 
 void convertSoundDataF(const SoundData_t * soundData_in, SoundData_F_t * soundDataF_out) {
   soundDataF_out->SPL_dBA = ((float) soundData_in->SPL_dBA_int) + 
-                            (((float) soundData_in->SPL_dBA_fr_1dp)/10.0);
+                           (((float) soundData_in->SPL_dBA_fr_1dp)/10.0);
   for (uint16_t i=0; i<SOUND_FREQ_BANDS; i++) {
     soundDataF_out->SPL_bands_dB[i] = ((float) soundData_in->SPL_bands_dB_int[i]) + 
-                                      (((float) soundData_in->SPL_bands_dB_fr_1dp[i])/10.0);
+                                     (((float) soundData_in->SPL_bands_dB_fr_1dp[i])/10.0);
   }
   soundDataF_out->peakAmp_mPa = ((float) soundData_in->peak_amp_mPa_int) + 
-                                (((float) soundData_in->peak_amp_mPa_fr_2dp)/100.0);
+                               (((float) soundData_in->peak_amp_mPa_fr_2dp)/100.0);
   soundDataF_out->stable = (soundData_in->stable == 1);
 }
 
 void convertParticleDataF(const ParticleData_t * particleData_in, ParticleData_F_t * particleDataF_out) {
-  particleDataF_out->concentration_ppL = particleData_in->concentration_ppL;
-  particleDataF_out->occupancy_pc = ((float) particleData_in->occupancy_pc_int) + 
-                                    (((float) particleData_in->occupancy_pc_fr_2dp)/100.0);
+  particleDataF_out->duty_cycle_pc = ((float) particleData_in->duty_cycle_pc_int) + 
+                                    (((float) particleData_in->duty_cycle_pc_fr_2dp)/100.0);
+  particleDataF_out->concentration = ((float) particleData_in->concentration_int) + 
+                                    (((float) particleData_in->concentration_fr_2dp)/100.0);
+  particleDataF_out->valid = (particleData_in->valid == 1);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -134,10 +153,12 @@ void printAirDataF(const AirData_F_t * airDataF) {
 }
 
 void printAirQualityDataF(const AirQualityData_F_t * airQualityDataF) {
-  Serial.print("Air Quality Index = ");Serial.print(airQualityDataF->AQI,2);
-  Serial.print(" (");Serial.print(interpret_AQI_value((uint16_t) airQualityDataF->AQI));Serial.println(")");
-  Serial.print("Estimated CO2 = ");Serial.print(airQualityDataF->CO2e,2);Serial.println(" ppm");
-  Serial.print("Equivalent Breath VOC = ");Serial.print(airQualityDataF->bVOC,2);Serial.println(" ppm");
+  if (airQualityDataF->AQI_accuracy > 0) {
+    Serial.print("Air Quality Index = ");Serial.print(airQualityDataF->AQI,2);
+    Serial.print(" (");Serial.print(interpret_AQI_value((uint16_t) airQualityDataF->AQI));Serial.println(")");
+    Serial.print("Estimated CO2 = ");Serial.print(airQualityDataF->CO2e,2);Serial.println(" ppm");
+    Serial.print("Equivalent Breath VOC = ");Serial.print(airQualityDataF->bVOC,2);Serial.println(" ppm");
+  }
   Serial.print("Air Quality Accuracy: ");
   Serial.println(interpret_AQI_accuracy(airQualityDataF->AQI_accuracy));
 }
@@ -157,19 +178,28 @@ void printSoundDataF(const SoundData_F_t * soundDataF) {
     Serial.print(soundDataF->SPL_bands_dB[i],1);Serial.println(" dB");
   }
   Serial.print("Peak Sound Amplitude = ");Serial.print(soundDataF->peakAmp_mPa,2);Serial.println(" mPa");
-  Serial.print("Microphone Initialized: ");
-  if (soundDataF->stable) {
+}
+
+void printParticleDataF(const ParticleData_F_t * particleDataF, ParticleSensor_t particleSensor) {
+  Serial.print("Particle Duty Cycle = ");Serial.print(particleDataF->duty_cycle_pc,2);Serial.println(" %");
+  Serial.print("Particle Concentration = ");
+  Serial.print(particleDataF->concentration,2);
+  if (particleSensor == PPD42) {
+    Serial.println(" ppL");
+  }
+  else if (particleSensor == SDS011) {
+    Serial.println(" ug/m3");
+  }
+  else {
+    Serial.println(" (?)");
+  }
+  Serial.print("Particle data valid: ");
+  if (particleDataF->valid) {
     Serial.println("Yes");
   }
   else {
-    Serial.println("No");
+    Serial.println("No (Initializing)");
   }
-}
-
-void printParticleDataF(const ParticleData_F_t * particleDataF) {
-  Serial.print("Particle Occupancy = ");Serial.print(particleDataF->occupancy_pc,1);Serial.println(" %");
-  Serial.print("Particle Concentration = ");
-  Serial.print(particleDataF->concentration_ppL);Serial.println(" ppL");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -202,6 +232,7 @@ void printAirData(const AirData_t * airData, bool printColumns) {
       sprintf(strbuf,"Temperature = -%u.%u C",temp,airData->T_C_fr_1dp);
     }
     else {
+      // temperature is positive
       sprintf(strbuf,"Temperature = %u.%u C",temp,airData->T_C_fr_1dp);
     }
     Serial.println(strbuf);
@@ -222,14 +253,16 @@ void printAirQualityData(const AirQualityData_t * airQualityData, bool printColu
     Serial.print(strbuf);
   }
   else {
-    sprintf(strbuf,"Air Quality Index = %u.%u (%s)",
-        airQualityData->AQI_int, airQualityData->AQI_fr_1dp, interpret_AQI_value(airQualityData->AQI_int));
-    Serial.println(strbuf);
-    sprintf(strbuf,"Estimated CO2 = %u.%u ppm",airQualityData->CO2e_int, airQualityData->CO2e_fr_1dp);
-    Serial.println(strbuf);
-    sprintf(strbuf,"Equivalent Breath VOC = %u.%02u ppm",
-                   airQualityData->bVOC_int, airQualityData->bVOC_fr_2dp);
-    Serial.println(strbuf);
+    if (airQualityData->AQI_accuracy > 0) {
+      sprintf(strbuf,"Air Quality Index = %u.%u (%s)",
+          airQualityData->AQI_int, airQualityData->AQI_fr_1dp, interpret_AQI_value(airQualityData->AQI_int));
+      Serial.println(strbuf);
+      sprintf(strbuf,"Estimated CO2 = %u.%u ppm",airQualityData->CO2e_int, airQualityData->CO2e_fr_1dp);
+      Serial.println(strbuf);
+      sprintf(strbuf,"Equivalent Breath VOC = %u.%02u ppm",
+                     airQualityData->bVOC_int, airQualityData->bVOC_fr_2dp);
+      Serial.println(strbuf);
+    }
     Serial.print("Air Quality Accuracy: ");
     Serial.println(interpret_AQI_accuracy(airQualityData->AQI_accuracy));
   }
@@ -262,13 +295,6 @@ void printSoundData(const SoundData_t * soundData, bool printColumns) {
     sprintf(strbuf,"Peak Sound Amplitude = %u.%02u mPa", 
                    soundData->peak_amp_mPa_int, soundData->peak_amp_mPa_fr_2dp);
     Serial.println(strbuf);
-    Serial.print("Microphone Initialized: ");
-    if (soundData->stable == 0) {
-      Serial.println("No");
-    }
-    else {
-      Serial.println("Yes");
-    }
   }
 }
 
@@ -286,26 +312,45 @@ void printLightData(const LightData_t * lightData, bool printColumns) {
   }
 }
 
-void printParticleData(const ParticleData_t * particleData, bool printColumns) {
+void printParticleData(const ParticleData_t * particleData, bool printColumns, 
+                       ParticleSensor_t particleSensor) {
   char strbuf[50] = {0};
   if (printColumns) {
-    // Print: occupancy/%, concentration/ppL
-    sprintf(strbuf,"%u.%02u %u ", particleData->occupancy_pc_int, 
-                   particleData->occupancy_pc_fr_2dp, particleData->concentration_ppL);
+    // Print: duty cycle/%, concentration
+    sprintf(strbuf,"%u.%02u %u.%02u %u ", particleData->duty_cycle_pc_int, 
+                   particleData->duty_cycle_pc_fr_2dp, particleData->concentration_int,
+                   particleData->concentration_fr_2dp, particleData->valid);
     Serial.print(strbuf);
   }
   else {
-    sprintf(strbuf,"Particle Occupancy = %u.%02u %%", 
-                   particleData->occupancy_pc_int, particleData->occupancy_pc_fr_2dp);
+    sprintf(strbuf,"Particle Duty Cycle = %u.%02u %%", 
+                   particleData->duty_cycle_pc_int, particleData->duty_cycle_pc_fr_2dp);
     Serial.println(strbuf);
-    Serial.print("Particle Concentration = ");
-    Serial.print(particleData->concentration_ppL);Serial.println(" ppL");
+    sprintf(strbuf,"Particle Concentration = %u.%02u ", 
+                   particleData->concentration_int, particleData->concentration_fr_2dp);
+    Serial.print(strbuf);
+    if (particleSensor == PPD42) {
+      Serial.println(" ppL");
+    }
+    else if (particleSensor == SDS011) {
+      Serial.println(" ug/m3");
+    }
+    else {
+      Serial.println(" (?)");
+    }
+    Serial.print("Particle data valid: ");
+    if (particleData->valid == 0) {
+      Serial.println("No (Initializing)");
+    }
+    else {
+      Serial.println("Yes");
+    }
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
 
-// Send data to Metriful using the I2C-compatible two wire interface.
+// Send data to the Metriful MS430 using the I2C-compatible two wire interface.
 //
 // Returns true on success, false on failure.
 //
@@ -333,7 +378,7 @@ bool TransmitI2C(uint8_t dev_addr_7bit, uint8_t commandRegister, uint8_t data[],
   return (TheWire.endTransmission(true) == 0);
 }
 
-// Read data from Metriful using the I2C-compatible two wire interface.
+// Read data from the Metriful MS430 using the I2C-compatible two wire interface.
 //
 // Returns true on success, false on failure.
 //
@@ -382,11 +427,11 @@ const char * interpret_AQI_accuracy(uint8_t AQI_accuracy_code) {
   switch (AQI_accuracy_code) {
     default:
     case 0:
-      return "Not Valid, Calibration Incomplete";
+      return "Not Yet Valid, Self-calibration Incomplete";
     case 1:
-      return "Low Accuracy, Calibration Ongoing";
+      return "Low Accuracy, Self-calibration Ongoing";
     case 2:
-      return "Medium Accuracy, Calibration Ongoing";
+      return "Medium Accuracy, Self-calibration Ongoing";
     case 3:
       return "High Accuracy";
   }
@@ -414,3 +459,30 @@ const char * interpret_AQI_value(uint16_t AQI) {
   }
 }
 
+// Set the threshold for triggering a sound interrupt.
+//
+// Returns true on success, false on failure.
+//
+// threshold_mPa = peak sound amplitude threshold in milliPascals, any 16-bit integer is allowed.
+bool setSoundInterruptThreshold(uint8_t dev_addr_7bit, uint16_t threshold_mPa) {
+  uint8_t TXdata[SOUND_INTERRUPT_THRESHOLD_BYTES] = {0};
+  TXdata[0] = (uint8_t) (threshold_mPa & 0x00FF);
+  TXdata[1] = (uint8_t) (threshold_mPa >> 8);
+  return TransmitI2C(dev_addr_7bit, SOUND_INTERRUPT_THRESHOLD_REG, TXdata, SOUND_INTERRUPT_THRESHOLD_BYTES);
+}
+
+// Set the threshold for triggering a light interrupt.
+//
+// Returns true on success, false on failure.
+//
+// The threshold value in lux units can be fractional and is formed as:
+//     threshold = thres_lux_int + (thres_lux_fr_2dp/100)
+//
+// Threshold values exceeding MAX_LUX_VALUE will be limited to MAX_LUX_VALUE.
+bool setLightInterruptThreshold(uint8_t dev_addr_7bit, uint16_t thres_lux_int, uint8_t thres_lux_fr_2dp) {
+  uint8_t TXdata[LIGHT_INTERRUPT_THRESHOLD_BYTES] = {0};
+  TXdata[0] = (uint8_t) (thres_lux_int & 0x00FF);
+  TXdata[1] = (uint8_t) (thres_lux_int >> 8);
+  TXdata[2] = thres_lux_fr_2dp;
+  return TransmitI2C(dev_addr_7bit, LIGHT_INTERRUPT_THRESHOLD_REG, TXdata, LIGHT_INTERRUPT_THRESHOLD_BYTES);
+}

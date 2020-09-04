@@ -1,11 +1,11 @@
-#  cycle_readout.py
+#  on_demand_readout.py
 
-#  Example code for using the Metriful MS430 in cycle mode. 
+#  Example code for using the Metriful MS430 in "on-demand" mode.
 #  This example is designed to run with Python 3 on a Raspberry Pi.
    
-#  Continually measures and displays all environmental data in a 
-#  repeating cycle. User can choose from a cycle time period 
-#  of 3, 100, or 300 seconds.
+#  Repeatedly measures and displays all environment data, with a pause
+#  between measurements. Air quality data are unavailable in this mode 
+#  (instead see cycle_readout.py).
 
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
@@ -18,8 +18,11 @@ from sensor_functions import *
 #########################################################
 # USER-EDITABLE SETTINGS
 
-# How often to read data (every 3, 100, 300 seconds)
-cycle_period = CYCLE_PERIOD_3_S 
+# Pause (in seconds) between data measurements (note that the
+# measurement itself takes 0.5 seconds)
+pause_s = 3.5
+# Choosing a pause of less than 2 seconds will cause inaccurate 
+# temperature, humidity and particle data.
 
 # Which particle sensor, if any, is attached 
 # (PARTICLE_SENSOR_X with X = PPD42, SDS011, or OFF)
@@ -39,15 +42,15 @@ print_data_as_columns = False
 # Apply the chosen settings
 if (particleSensor != PARTICLE_SENSOR_OFF):
   I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [particleSensor])
-I2C_bus.write_i2c_block_data(i2c_7bit_address, CYCLE_TIME_PERIOD_REG, [cycle_period])
 
 #########################################################
 
-print("Entering cycle mode and waiting for data. Press ctrl-c to exit.")
-
-I2C_bus.write_byte(i2c_7bit_address, CYCLE_MODE_CMD)
-
 while (True):
+
+  sleep(pause_s)
+  
+  # Trigger a new measurement
+  I2C_bus.write_byte(i2c_7bit_address, ON_DEMAND_MEASURE_CMD)
 
   # Wait for the next new data release, indicated by a falling edge on READY
   while (not GPIO.event_detected(READY_pin)):
@@ -60,13 +63,7 @@ while (True):
   air_data = extractAirData(raw_data)
   writeAirData(None, air_data, print_data_as_columns)
 
-  # Air quality data
-  # The initial self-calibration of the air quality data may take several
-  # minutes to complete. During this time the accuracy parameter is zero 
-  # and the data values are not valid.
-  raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, AIR_QUALITY_DATA_READ, AIR_QUALITY_DATA_BYTES)
-  air_quality_data = extractAirQualityData(raw_data)
-  writeAirQualityData(None, air_quality_data, print_data_as_columns)
+  # Air quality data are not available with on demand measurements
 
   # Light data
   raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, LIGHT_DATA_READ, LIGHT_DATA_BYTES)

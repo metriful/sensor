@@ -1,11 +1,18 @@
 /* 
-   cycle_readout.ino
+   particle_sensor_toggle.ino
 
-   Example code for using the Metriful MS430 in cycle mode. 
+   Optional advanced demo. This program shows how to generate an output 
+   control signal from one of the host's pins, which can be used to turn 
+   the particle sensor on and off. An external transistor circuit is
+   also needed - this will gate the sensor power supply according to 
+   the control signal.
    
-   Continually measures and displays all environment data in 
-   a repeating cycle. User can choose from a cycle time period 
-   of 3, 100, or 300 seconds. View the output in the Serial Monitor.
+   The program continually measures and displays all environment data
+   in a repeating cycle. The user can view the output in the Serial 
+   Monitor. After reading the data, the particle sensor is powered off 
+   for a chosen number of cycles ("off_cycles"). It is then powered on 
+   and read before being powered off again. Sound data are ignored 
+   while the particle sensor is on, to avoid fan noise.
 
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
@@ -19,19 +26,29 @@
 //////////////////////////////////////////////////////////
 // USER-EDITABLE SETTINGS
 
-// How often to read data (every 3, 100, 300 seconds)
-uint8_t cycle_period = CYCLE_PERIOD_3_S;
+// How often to read data; choose only 100 or 300 seconds for this demo
+// because the sensor should be on for at least one minute before reading
+// its data.
+uint8_t cycle_period = CYCLE_PERIOD_100_S;
 
 // The I2C address of the Metriful board
 uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
 
-// Which particle sensor is attached (PPD42, SDS011, or OFF)
-ParticleSensor_t particleSensor = PPD42;
-
 // How to print the data over the serial port. If printDataAsColumns = true,
-// data are columns of numbers, useful to copy/paste to a spreadsheet
+// data are columns of numbers, useful for transferring to a spreadsheet
 // application. Otherwise, data are printed with explanatory labels and units.
-bool printDataAsColumns = false;
+bool printDataAsColumns = true;
+
+// Which particle sensor is attached (PPD42, SDS011, or OFF)
+ParticleSensor_t particleSensor = SDS011;
+
+// Particle sensor power control options
+uint8_t off_cycles = 2;  // leave the sensor off for this many cycles between reads
+uint8_t particle_sensor_control_pin = 10; // host pin number which outputs the control signal
+bool particle_sensor_ON_state = true; 
+// particle_sensor_ON_state is the required polarity of the control 
+// signal; true means +V is output to turn the sensor on, while false
+// means 0V is output.
 
 // END OF USER-EDITABLE SETTINGS
 //////////////////////////////////////////////////////////
@@ -45,10 +62,18 @@ LightData_t lightData = {0};
 SoundData_t soundData = {0};
 ParticleData_t particleData = {0};
 
+bool particleSensorIsOn = false;
+uint8_t particleSensor_count = 0;
+
 
 void setup() {  
   // Initialize the host pins, set up the serial port and reset:
   SensorHardwareSetup(i2c_7bit_address); 
+  
+  // Set up the particle sensor control, and turn it on
+  pinMode(particle_sensor_control_pin, OUTPUT);
+  digitalWrite(particle_sensor_control_pin, particle_sensor_ON_state);
+  particleSensorIsOn = true;
   
   // Apply chosen settings to the Metriful board
   if (particleSensor != OFF) {
@@ -76,7 +101,7 @@ void loop() {
   }
   ready_assertion_event = false;
 
-  /* Read data from Metriful into the data structs. 
+  /* Read data from the Metriful board into the data structs. 
   For each category of data (air, sound, etc.) a pointer to the data struct is 
   passed to the ReceiveI2C() function. The received byte sequence fills the data 
   struct in the correct order so that each field within the struct receives
@@ -96,8 +121,10 @@ void loop() {
   // Light data
   ReceiveI2C(i2c_7bit_address, LIGHT_DATA_READ, (uint8_t *) &lightData, LIGHT_DATA_BYTES);
   
-  // Sound data
-  ReceiveI2C(i2c_7bit_address, SOUND_DATA_READ, (uint8_t *) &soundData, SOUND_DATA_BYTES);
+  // Sound data - only read when particle sensor is off
+  if (!particleSensorIsOn) {
+    ReceiveI2C(i2c_7bit_address, SOUND_DATA_READ, (uint8_t *) &soundData, SOUND_DATA_BYTES);
+  }
   
   /* Particle data
   This requires the connection of a particulate sensor (invalid 
@@ -106,17 +133,41 @@ void loop() {
   particle data become valid after an initial initialization 
   period of approximately one minute.
   */ 
-  if (particleSensor != OFF) {
+  if (particleSensorIsOn) {
     ReceiveI2C(i2c_7bit_address, PARTICLE_DATA_READ, (uint8_t *) &particleData, PARTICLE_DATA_BYTES);
   }
 
-  // Print all data to the serial port
+  // Print all data to the serial port. The previous loop's particle or
+  // sound data will be printed if no reading was done on this loop.
   printAirData(&airData, printDataAsColumns);
   printAirQualityData(&airQualityData, printDataAsColumns);
   printLightData(&lightData, printDataAsColumns);
   printSoundData(&soundData, printDataAsColumns);
-  if (particleSensor != OFF) {
-    printParticleData(&particleData, printDataAsColumns, particleSensor);
-  }
+  printParticleData(&particleData, printDataAsColumns, particleSensor);
   Serial.println();
+  
+  // Turn the particle sensor on/off if required 
+  if (particleSensorIsOn) {
+    // Stop the particle detection on the MS430
+    transmit_buffer[0] = OFF;
+    TransmitI2C(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, transmit_buffer, 1);
+      
+    // Turn off the hardware:
+    digitalWrite(particle_sensor_control_pin, !particle_sensor_ON_state);
+    particleSensorIsOn = false;
+  }
+  else {
+    particleSensor_count++;
+    if (particleSensor_count >= off_cycles) {
+      // Turn on the hardware:
+      digitalWrite(particle_sensor_control_pin, particle_sensor_ON_state);
+      
+      // Start the particle detection on the MS430
+      transmit_buffer[0] = particleSensor;
+      TransmitI2C(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, transmit_buffer, 1);
+      
+      particleSensor_count = 0;
+      particleSensorIsOn = true;
+    }   
+  }
 }

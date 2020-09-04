@@ -1,7 +1,7 @@
 #  simple_read_T_H.py
 
-#  Example code for using the Metriful board to measure humidity 
-#  and temperature. 
+#  Example code for using the Metriful MS430 to measure humidity and
+#  temperature. 
 #  This example is designed to run with Python 3 on a Raspberry Pi.
 
 #  Measures and displays the humidity and temperature, demonstrating 
@@ -12,15 +12,13 @@
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
+#  For code examples, datasheet and user guide, visit 
+#  https://github.com/metriful/sensor
 
 from sensor_functions import *
 
 # Set up the GPIO and I2C communications bus
 (GPIO, I2C_bus) = SensorHardwareSetup()
-
-# Tell the Pi to monitor READY for a falling edge event (high-to-low voltage change)
-GPIO.add_event_detect(READY_pin, GPIO.FALLING) 
 
 # Initiate an on-demand data measurement
 I2C_bus.write_byte(i2c_7bit_address, ON_DEMAND_MEASURE_CMD)
@@ -94,7 +92,7 @@ print("Humidity = {:.1f} %".format(air_data['H_pc']))
 print("Gas sensor resistance = " + str(air_data['G_ohm']) + " ohm")
 
 # Or just use the following function for printing:
-# writeAirData(None, air_data, False)
+writeAirData(None, air_data, False)
 
 #########################################################
 

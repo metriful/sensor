@@ -1,7 +1,7 @@
 /* 
    simple_read_T_H.ino
 
-   Example code for using the Metriful board to measure humidity 
+   Example code for using the Metriful MS430 to measure humidity 
    and temperature. 
    
    Measures and displays the humidity and temperature, demonstrating 
@@ -12,11 +12,11 @@
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit https://github.com/metriful/sensor
+   For code examples, datasheet and user guide, visit 
+   https://github.com/metriful/sensor
 */
 
 #include <Metriful_sensor.h>
-#include <stdint.h>
 
 //////////////////////////////////////////////////////////
 // USER-EDITABLE SETTINGS
@@ -25,31 +25,33 @@
 uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
 
 // Whether to use floating point representation of numbers (uses more 
-// resources):
+// host resources)
 bool useFloatingPoint = false;
 
 // END OF USER-EDITABLE SETTINGS
 //////////////////////////////////////////////////////////
 
-// Ensure tx/rx buffers are big enough to fit the largest send/receive transactions:
-uint8_t transmit_buffer[LIGHT_INTERRUPT_THRESHOLD_BYTES] = {0};
-uint8_t receive_buffer[SOUND_DATA_BYTES] = {0};
+uint8_t receive_buffer[2] = {0};
 
 void setup() {  
-  // Initialize the Arduino pins, set up the serial port and reset:
+  // Initialize the host pins, set up the serial port and reset:
   SensorHardwareSetup(i2c_7bit_address); 
   
   // Wait for the serial port to be ready, for displaying the output
-  while (!Serial) {} 
+  while (!Serial) {
+    yield();
+  } 
   
   // Clear the global variable in preparation for waiting for READY assertion
   ready_assertion_event = false;
   
   // Initiate an on-demand data measurement
-  TransmitI2C(i2c_7bit_address, ON_DEMAND_MEASURE_CMD, transmit_buffer, 0);
+  TransmitI2C(i2c_7bit_address, ON_DEMAND_MEASURE_CMD, 0, 0);
 
   // Now wait for the ready signal before continuing
-  while (!ready_assertion_event) {}
+  while (!ready_assertion_event) {
+    yield();
+  }
     
   // We now know that data are ready to read.
 
