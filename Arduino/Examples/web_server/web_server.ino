@@ -33,7 +33,7 @@ uint8_t cycle_period = CYCLE_PERIOD_3_S;
 uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
 
 // Which particle sensor is attached (PPD42, SDS011, or OFF)
-ParticleSensor_t particleSensor = PPD42;
+ParticleSensor_t particleSensor = OFF;
 
 // Choose whether to create a new WiFi network (host as Access Point),
 // or connect to an existing WiFi network.
@@ -192,7 +192,7 @@ void loop() {
   
   // new data are now ready
 
-  /* Read data from Metriful into the data structs. 
+  /* Read data the MS430 into the data structs. 
   For each category of data (air, sound, etc.) a pointer to the data struct is 
   passed to the ReceiveI2C() function. The received byte sequence fills the data 
   struct in the correct order so that each field within the struct receives

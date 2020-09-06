@@ -33,7 +33,7 @@ while (not GPIO.event_detected(READY_pin)):
 
 # HUMIDITY
 
-# Read the humidity value from the Metriful board
+# Read the humidity value from the MS430
 raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, H_READ, H_BYTES)
 
 # Decode the humidity: the first byte is the integer part, the 
@@ -48,7 +48,7 @@ print("Humidity = " + str(humidity_integer) + "." + str(humidity_fraction) + " %
 
 # TEMPERATURE
 
-# Read the temperature value from the Metriful board
+# Read the temperature value from the MS430
 raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, T_READ, T_BYTES)
 
 # Decode and print the temperature:

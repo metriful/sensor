@@ -354,7 +354,7 @@ void printParticleData(const ParticleData_t * particleData, bool printColumns,
 //
 // Returns true on success, false on failure.
 //
-// dev_addr_7bit = the 7-bit I2C address of the Metriful board.
+// dev_addr_7bit = the 7-bit I2C address of the MS430 board.
 // commandRegister = the settings register code or command code to be used.
 // data = array containing the data to be sent; its length must be at least "data_length" bytes.
 // data_length = the number of bytes from the "data" array to be sent. 
@@ -382,7 +382,7 @@ bool TransmitI2C(uint8_t dev_addr_7bit, uint8_t commandRegister, uint8_t data[],
 //
 // Returns true on success, false on failure.
 //
-// dev_addr_7bit = the 7-bit I2C address of the Metriful board.
+// dev_addr_7bit = the 7-bit I2C address of the MS430 board.
 // commandRegister = the settings register code or data location code to be used.
 // data = array to store the received data; its length must be at least "data_length" bytes.
 // data_length = the number of bytes to read. 

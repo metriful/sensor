@@ -10,19 +10,30 @@ This repository provides instructions and software examples for running the MS43
 
 The code examples demonstrate various ways of using the module. This includes basic control/readout, saving data to files and IoT cloud storage. Detailed comments explain each part of the programs.
 
-The [**User Guide**](User_guide.pdf) covers hardware setup, gives an overview of the code examples and explains more about what the device measures. 
+The [**User Guide**](User_guide.pdf) covers hardware setup in more detail, gives an overview of the code examples and explains more about what the device measures. 
 
 The [**Datasheet**](Datasheet.pdf) is a detailed specification of the electrical and communications interfaces of the MS430. 
 
 You can also [visit the product homepage.](https://www.sensor.metriful.com)
 
 ### Contents
+**[Handling precautions](#handling-precautions)**<br>
 **[Use with Arduino](#use-with-arduino)**<br>
 **[Use with Raspberry Pi](#use-with-raspberry-pi)**<br>
 **[Use with NodeMCU](#use-with-nodemcu)**<br>
 **[IoT cloud setup](#iot-cloud-setup)**<br>
 **[License](#license)**<br>
 **[Disclaimer](#disclaimer)**<br>
+
+
+## Handling precautions
+
+The MS430 can be damaged by static electricity discharges. Minimize this risk by observing the following precautions:
+
+- Handle the board by the edges
+- Avoid touching any metal part of the device or circuit it connects to
+- Store in the provided antistatic bag when not connected in a circuit
+- Keep away from metal objects which could cause shorted connections
 
 
 ## Use with Arduino
@@ -49,21 +60,21 @@ If using **Arduino Nano 33 IoT**, also do the following:
 
 ### Wiring for Arduino
 
-| MS430 pin       |       Uno            |      Nano            |     Nano 33 IoT     |     MKR WiFi 1010   |
+|    MS430 pin    |       Uno            |        Nano          |     Nano 33 IoT     |     MKR WiFi 1010   |
 |:---------------:|:--------------------:|:--------------------:|:-------------------:|:-------------------:|
 |        VIN      |       5V             |         5V           |        -            |         -           |
 |        VDD      |        -             |         -            |        3.3V         |        VCC          |
 |        GND      |       GND            |         GND          |        GND          |        GND          |
-|        VPU      |       5V             |         5V           |        3.3V         |        VCC          |
+|        VPU      |      IOREF           |         5V           |        3.3V         |        VCC          |
 |        SCL      |       SCL            |         A5           |        A3           |        SCL          |
 |        SDA      |       SDA            |         A4           |        A0           |        SDA          |
 |        LIT      |        D4            |         D4           |        A1           |        D4           |
 |        SIT      |        D7            |         D7           |        A2           |        D5           |
 |        RDY      |        D2            |         D2           |        D11          |        D0           |
 
-* Input VDD is not used with 5 V systems and VIN is not used with 3.3 V systems.
+* MS430 pin VDD is not used with 5 V systems and VIN is not used with 3.3 V systems.
 
-* If using the PPD42 particle sensor, connect:
+* If using the PPD42 particle sensor, note that its pin numbering runs from right to left, and connect:
 	* Arduino 5V pin to PPD42 pin 3
 	* Arduino GND pin to PPD42 pin 1
 	* PPD42 pin 4 to MS430 pin PRT
@@ -73,7 +84,9 @@ If using **Arduino Nano 33 IoT**, also do the following:
 	* Arduino GND pin to SDS011 pin "GND"
 	* SDS011 pin "25um" to MS430 pin PRT
 
-* Using particle sensors with **Nano 33 IoT**: the solder bridge labeled “VUSB” on the underside of the Arduino must be soldered closed (to provide 5V through the VUSB pin).
+* To obtain 5V output on the Nano 33 IoT: the solder bridge labeled "VUSB" on the underside of the Arduino must be soldered closed, then use the VUSB pin.
+* To obtain a third 5V output on the Uno: use pin number 2 on the 6-pin ICSP header
+* With all hosts, VPU can be supplied from any host digital output pin set to a high voltage state. This can be useful for hosts without enough power output pins.
 
 ### To run an example program on Arduino
 
@@ -109,10 +122,10 @@ This setup assumes that you are using Raspbian Buster, which comes with all requ
 
 ### Wiring for Raspberry Pi
 
-| MS430 pin         | Raspberry Pi pin number | Raspberry Pi pin name | 
+|      MS430 pin    | Raspberry Pi pin number | Raspberry Pi pin name | 
 |:-----------------:|:-----------------------:|:---------------------:|
 |         VIN       |           -             |           -           |
-|         VDD       |           1             |      3V3 power        |
+|         VDD       |          1              |       3V3 power       |
 |         GND       |          6              |        Ground         | 
 |         VPU       |          17             |      3V3 power        | 
 |         SCL       |          5              |      GPIO 3 (SCL)     |
@@ -121,9 +134,9 @@ This setup assumes that you are using Raspbian Buster, which comes with all requ
 |         SIT       |          8              |        GPIO 14        |
 |         RDY       |          11             |        GPIO 17        |
 
-* Input VIN is not used.
+* MS430 pin VIN is not used.
 
-* If using the PPD42 particle sensor, connect:
+* If using the PPD42 particle sensor, note that its pin numbering runs from right to left, and connect:
 	* Pi pin 2 (5V) to PPD42 pin 3
 	* Pi pin 9 (Ground) to PPD42 pin 1
 	* PPD42 pin 4 to MS430 pin PRT
@@ -162,21 +175,21 @@ Note that steps 1 and 2 are already complete if you have used Arduino before on 
 
 ### Wiring for NodeMCU
 
-| MS430 pin       |       NodeMCU        | 
+|    MS430 pin    |       NodeMCU        | 
 |:---------------:|:--------------------:|
 |        VIN      |        -             |
-|        VDD      |       3V3             |
+|        VDD      |       3V3            |
 |        GND      |       GND            | 
-|        VPU      |       3V3             | 
+|        VPU      |       3V3            | 
 |        SCL      |    D2 (GPIO 4)       |
 |        SDA      |    D1 (GPIO 5)       |
 |        LIT      |    D3 (GPIO 0)       |
 |        SIT      |    D5 (GPIO 14)      |
 |        RDY      |    D6 (GPIO 12)      |
 
-* Input VIN is not used.
+* MS430 pin VIN is not used.
 	
-* If using the PPD42 particle sensor, connect:
+* If using the PPD42 particle sensor, note that its pin numbering runs from right to left, and connect:
 	* NodeMCU Vin (5V) pin to PPD42 pin 3
 	* NodeMCU GND pin to PPD42 pin 1
 	* PPD42 pin 4 to MS430 pin PRT
@@ -205,10 +218,6 @@ IoT cloud hosting is available from many providers around the world. Some offer 
 
 ### Tago cloud
 
-An example of MS430 data logging with the Tago cloud can be viewed publicly here:
-
-[https://admin.tago.io/public/dashboard/5e21a4f806fbee0026eb48c8/07c2e906-f806-4e30-adcd-0ca2919d9828](https://admin.tago.io/public/dashboard/5e21a4f806fbee0026eb48c8/07c2e906-f806-4e30-adcd-0ca2919d9828)
-
 The steps required to set up Tago for the IoT cloud logging code example are:
 
 1. Register for a free account at [Tago.io](https://tago.io)
@@ -230,15 +239,12 @@ The steps required to set up Tago for the IoT cloud logging code example are:
 	* **illuminance**
 	* **particulates** (air particle concentration)
 9. Create a Tago dashboard for viewing the data: click the **+** to add a new dashboard, choose its name and click **save**.
-10. Add widgets of various types to the dashboard (e.g. **Line** for a simple graph, **Card** to display text or numbers). The minimum configuration for each widget is to choose the **Variable** which it displays. It is also possible to edit graph and axis titles, coloring, calculate formulas, etc.
-11. To set graph time periods to 24 hours: on the **Data Range & Format** tab of the chart settings, input **864** as the **maximum number of points to be displayed**. This assumes that the data are logged every 100 seconds (there are 86,400 seconds in 24 hours).
-12. Generate a public link to your cloud data by choosing "share" in the dashboard menu.
+10. Add widgets of various types to the dashboard (e.g. **Line** for a simple graph, **Card** to display text or numbers). 
+11. Configure each widget: the minimum configuration is to choose the **Variable** which it displays. It is also possible to edit graph and axis titles, coloring, calculate formulas, etc.
+12. Set graph displayed time period, e.g. for 24 hours: on the **Data Range & Format** tab of the chart settings, input **864** as the **maximum number of points to be displayed**. This assumes that the data are logged every 100 seconds (there are 86,400 seconds in 24 hours).
+13. Create a public link for sharing your dashboard: click the three dots next to your dashboard name on the left-hand list. Choose “share” then copy the link displayed under the “share public” tab.
 
 ### Thingspeak cloud
-
-An example of MS430 data logging with the Thingspeak cloud can be viewed publicly here: 
-
-[https://thingspeak.com/channels/1014791](https://thingspeak.com/channels/1014791)
 
 The steps required to set up Thingspeak for the IoT cloud logging code example are:
 
@@ -254,9 +260,9 @@ The steps required to set up Thingspeak for the IoT cloud logging code example a
 	* Field 5: **Breath VOC / ppm**
 	* Field 6: **Sound Level / dBA SPL**
 	* Field 7: **Illuminance / lx**
-	* Field 8: **Particle Concentration / ppL**
+	* Field 8: **Particle Concentration**
 6. Click **Save Channel**. The channel will show eight (initially empty) graphs.
-7. To set graph time periods to 24 hours: on each graph click the pencil icon, delete **60** from the **Results** box and put **1** in the **Days** box, then click **Save**. This changes the graph period from the last 60 values to the last 1 day. This must be done for both the private and public view if the channel is shared publicly.
+7. To set graph time periods to 24 hours: on each graph click the pencil icon, delete **60** from the **Results** box and put **1** in the **Days** box, then click **Save**. This changes the graph period from the last 60 values to the last 1 day. This must be done separately for both the private and public view if the channel is shared publicly.
 8. The channel can be made public, if desired, from the Thingspeak **Sharing** tab.
 9. Go to the **API Keys** tab and copy the Write API Key (a sequence of letters and numbers).
 10. Paste the API key into the Metriful IoT cloud logging example code as the variable **THINGSPEAK_API_KEY_STRING** and set the variable **useTagoCloud** as **false**.

@@ -43,12 +43,13 @@ bool printDataAsColumns = true;
 ParticleSensor_t particleSensor = SDS011;
 
 // Particle sensor power control options
-uint8_t off_cycles = 2;  // leave the sensor off for this many cycles between reads
+uint8_t off_cycles = 1;  // leave the sensor off for this many cycles between reads
 uint8_t particle_sensor_control_pin = 10; // host pin number which outputs the control signal
 bool particle_sensor_ON_state = true; 
 // particle_sensor_ON_state is the required polarity of the control 
-// signal; true means +V is output to turn the sensor on, while false
-// means 0V is output.
+// signal; true means +V is output to turn the sensor on (use this for 
+// 3.3 V hosts). false means 0V is output to turn the sensor on (use
+// this for 5 V hosts). The User Guide gives example switching circuits.
 
 // END OF USER-EDITABLE SETTINGS
 //////////////////////////////////////////////////////////
@@ -70,12 +71,12 @@ void setup() {
   // Initialize the host pins, set up the serial port and reset:
   SensorHardwareSetup(i2c_7bit_address); 
   
-  // Set up the particle sensor control, and turn it on
+  // Set up the particle sensor control, and turn it off initially
   pinMode(particle_sensor_control_pin, OUTPUT);
-  digitalWrite(particle_sensor_control_pin, particle_sensor_ON_state);
-  particleSensorIsOn = true;
+  digitalWrite(particle_sensor_control_pin, !particle_sensor_ON_state);
+  particleSensorIsOn = false;
   
-  // Apply chosen settings to the Metriful board
+  // Apply chosen settings to the MS430
   if (particleSensor != OFF) {
     transmit_buffer[0] = particleSensor;
     TransmitI2C(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, transmit_buffer, 1);
@@ -101,7 +102,7 @@ void loop() {
   }
   ready_assertion_event = false;
 
-  /* Read data from the Metriful board into the data structs. 
+  /* Read data from the MS430 into the data structs. 
   For each category of data (air, sound, etc.) a pointer to the data struct is 
   passed to the ReceiveI2C() function. The received byte sequence fills the data 
   struct in the correct order so that each field within the struct receives

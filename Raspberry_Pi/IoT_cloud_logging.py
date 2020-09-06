@@ -54,7 +54,7 @@ else:
 # Set up the GPIO and I2C communications bus
 (GPIO, I2C_bus) = SensorHardwareSetup()
 
-# Apply the chosen settings to the Metriful board
+# Apply the chosen settings to the MS430
 if (particleSensor != PARTICLE_SENSOR_OFF):
   I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [particleSensor])
 I2C_bus.write_i2c_block_data(i2c_7bit_address, CYCLE_TIME_PERIOD_REG, [cycle_period])
@@ -82,7 +82,7 @@ while (True):
   while (not GPIO.event_detected(READY_pin)):
     sleep(0.05)
   
-  # Now read all data from Metriful
+  # Now read all data from the MS430
 
   # Air data
   raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, AIR_DATA_READ, AIR_DATA_BYTES)

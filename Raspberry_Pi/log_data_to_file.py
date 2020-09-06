@@ -28,7 +28,7 @@ print_to_screen = True
 
 # Number of lines of data to log in each file before starting a new file
 # (required if log_to_file == True), and which directory to save them in.
-lines_per_file = 300
+lines_per_file = 3000
 data_file_directory = "/home/pi/Desktop"
 
 # How often to measure and read data (every 3, 100, 300 seconds):
@@ -43,7 +43,7 @@ particleSensor = PARTICLE_SENSOR_OFF
 # Set up the GPIO and I2C communications bus
 (GPIO, I2C_bus) = SensorHardwareSetup()
 
-# Apply the chosen settings to the Metriful board
+# Apply the chosen settings to the MS430
 if (particleSensor != PARTICLE_SENSOR_OFF):
   I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [particleSensor])
 I2C_bus.write_i2c_block_data(i2c_7bit_address, CYCLE_TIME_PERIOD_REG, [cycle_period])

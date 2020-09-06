@@ -29,7 +29,7 @@ uint32_t pause_ms = 3500;
 uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
 
 // Which particle sensor is attached (PPD42, SDS011, or OFF)
-ParticleSensor_t particleSensor = SDS011;
+ParticleSensor_t particleSensor = OFF;
 
 // How to print the data over the serial port. If printDataAsColumns = true,
 // data are columns of numbers, useful to copy/paste to a spreadsheet
@@ -75,7 +75,7 @@ void loop() {
     yield();
   }
 
-  /* Read data from Metriful into the data structs. 
+  /* Read data from the MS430 into the data structs. 
   For each category of data (air, sound, etc.) a pointer to the data struct is 
   passed to the ReceiveI2C() function. The received byte sequence fills the data 
   struct in the correct order so that each field within the struct receives

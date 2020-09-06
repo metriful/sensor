@@ -39,7 +39,7 @@ particleSensor = PARTICLE_SENSOR_SDS011
 print_data_as_columns = True
 
 # Particle sensor power control options
-off_cycles = 2;  # leave the sensor off for this many cycles between reads
+off_cycles = 1;  # leave the sensor off for this many cycles between reads
 particle_sensor_control_pin = 10; # Pi pin number which outputs the control signal
 
 # END OF USER-EDITABLE SETTINGS
@@ -48,10 +48,10 @@ particle_sensor_control_pin = 10; # Pi pin number which outputs the control sign
 # Set up the GPIO and I2C communications bus
 (GPIO, I2C_bus) = SensorHardwareSetup()
 
-# Set up the particle sensor control, and turn it on
+# Set up the particle sensor control, and turn it off initially
 GPIO.setup(particle_sensor_control_pin, GPIO.OUT)
-GPIO.output(particle_sensor_control_pin, 1)
-particleSensorIsOn = True
+GPIO.output(particle_sensor_control_pin, 0)
+particleSensorIsOn = False
 particleSensor_count = 0
 
 # Apply the chosen settings
