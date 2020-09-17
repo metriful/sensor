@@ -16,39 +16,23 @@
 
 import requests
 from sensor_functions import *
+from configparser import ConfigParser
+from pathlib import Path
 
 #########################################################
-# USER-EDITABLE SETTINGS
+# config
 
-# How often to read and log data (every 3, 100, 300 seconds)
-# Note: due to data rate limits on free cloud services, this should 
-# be set to 100 or 300 seconds, not 3 seconds.
-cycle_period = CYCLE_PERIOD_100_S
+config = ConfigParser()
+config.read('{}/.metriful.config'.format(str(Path.home())))
 
-# Which particle sensor, if any, is attached (PPD42, SDS011, or OFF)
-particleSensor = PARTICLE_SENSOR_OFF
-
-# IoT cloud settings.
-# This example uses the free IoT cloud hosting services provided 
-# by Tago.io or Thingspeak.com
-# Other free cloud providers are available.
-# An account must have been set up with the relevant cloud provider and 
-# an internet connection to the Pi must exist. See the accompanying 
-# readme and User Guide for more information.
-
-# Choose which provider to use
-use_Tago_cloud = True 
-# To use the ThingSpeak cloud, set: use_Tago_cloud=False
-
-# The chosen account's key/token must be inserted below.  
+cycle_period = globals()[config.get('main', 'cycle_period')]
+particleSensor = globals()[config.get('main', 'particleSensor')]
+use_Tago_cloud = config.get('main', 'use_Tago_cloud')
 if (use_Tago_cloud):
-  # settings for Tago.io cloud
-  TAGO_DEVICE_TOKEN_STRING = "PASTE YOUR TOKEN HERE WITHIN QUOTES"
+  TAGO_DEVICE_TOKEN_STRING = config.get('main', 'TAGO_DEVICE_TOKEN_STRING')
 else:
-  # settings for ThingSpeak.com cloud
-  THINGSPEAK_API_KEY_STRING = "PASTE YOUR API KEY HERE WITHIN QUOTES"
+  THINGSPEAK_API_KEY_STRING = config.get('main', 'THINGSPEAK_API_KEY_STRING')
 
-# END OF USER-EDITABLE SETTINGS
 #########################################################
 
 # Set up the GPIO and I2C communications bus

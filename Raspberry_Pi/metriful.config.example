@@ -1,0 +1,27 @@
+[main]
+
+# How often to read and log data (every 3, 100, 300 seconds)
+# Note: due to data rate limits on free cloud services, this should 
+# be set to 100 or 300 seconds, not 3 seconds.
+cycle_period = CYCLE_PERIOD_100_S
+
+# Which particle sensor, if any, is attached (PARTICLE_SENSOR_OFF, PARTICLE_SENSOR_PPD42, PARTICLE_SENSOR_SDS011)
+particleSensor = PARTICLE_SENSOR_OFF
+
+# IoT cloud settings.
+# This example uses the free IoT cloud hosting services provided 
+# by Tago.io or Thingspeak.com
+# Other free cloud providers are available.
+# An account must have been set up with the relevant cloud provider and 
+# an internet connection to the Pi must exist. See the accompanying 
+# readme and User Guide for more information.
+
+# Choose which provider to use
+# To use the ThingSpeak cloud, set: use_Tago_cloud=False
+use_Tago_cloud = True 
+
+# If using tago.io
+TAGO_DEVICE_TOKEN_STRING = "PASTE YOUR TOKEN HERE WITHIN QUOTES"
+
+# If using thingSpeak.com
+THINGSPEAK_API_KEY_STRING = "PASTE YOUR API KEY HERE WITHIN QUOTES"
