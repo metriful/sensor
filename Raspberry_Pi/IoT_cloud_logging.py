@@ -128,10 +128,11 @@ while (True):
   # Additionally, for Tago, the following is sent:
   # 9  Air Quality Assessment summary (Good, Bad, etc.) 
   # 10 Peak sound amplitude / mPa 
+  # 11 Temperature/F
   
   try:
     if use_Tago_cloud:
-      payload = [0]*10;
+      payload = [0]*11;
       payload[0] = {"variable":"temperature","value":"{:.1f}".format(air_data['T_C'])}
       payload[1] = {"variable":"pressure","value":air_data['P_Pa']}
       payload[2] = {"variable":"humidity","value":"{:.1f}".format(air_data['H_pc'])}
@@ -142,6 +143,7 @@ while (True):
       payload[7] = {"variable":"peak_amp","value":"{:.2f}".format(sound_data['peak_amp_mPa'])}
       payload[8] = {"variable":"illuminance","value":"{:.2f}".format(light_data['illum_lux'])}
       payload[9] = {"variable":"particulates","value":"{:.2f}".format(particle_data['concentration'])}
+      payload[10] = {"variable":"temperature_f","value":"{:.1f}".format((air_data['T_C']*9/5)+32)}
       requests.post(tago_url, json=payload, headers=tago_header, timeout=2)
     else:
       # Use ThingSpeak.com cloud
@@ -156,12 +158,12 @@ while (True):
       payload += "&field8=" + "{:.2f}".format(particle_data['concentration'])
       requests.post(thingspeak_url, data=payload, headers=thingspeak_header, timeout=2)
       
-  except:
+  except Exception as e:
     # An error has occurred, likely due to a lost internet connection, 
     # and the post has failed.
     # The program will retry with the next data release and will succeed 
     # if the internet reconnects.
-    print("HTTP POST failed.")
+    print("HTTP POST failed.\nERROR: {}".format(e))
 
 
 
