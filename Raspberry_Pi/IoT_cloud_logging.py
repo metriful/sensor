@@ -23,11 +23,12 @@ from pathlib import Path
 # config
 
 config = ConfigParser()
-config.read('{}/.metriful.config'.format(str(Path.home())))
+config.read('{}/.metriful'.format(str(Path.home())))
 
 cycle_period = globals()[config.get('main', 'cycle_period')]
 particleSensor = globals()[config.get('main', 'particleSensor')]
-use_Tago_cloud = config.get('main', 'use_Tago_cloud')
+use_Tago_cloud = config.getboolean('main', 'use_Tago_cloud')
+add_temperature_f = config.getboolean('main', 'add_temperature_f')
 if (use_Tago_cloud):
   TAGO_DEVICE_TOKEN_STRING = config.get('main', 'TAGO_DEVICE_TOKEN_STRING')
 else:
@@ -116,7 +117,7 @@ while (True):
   
   try:
     if use_Tago_cloud:
-      payload = [0]*11;
+      payload = [0]*11 if add_temperature_f else [0]*10;
       payload[0] = {"variable":"temperature","value":"{:.1f}".format(air_data['T_C'])}
       payload[1] = {"variable":"pressure","value":air_data['P_Pa']}
       payload[2] = {"variable":"humidity","value":"{:.1f}".format(air_data['H_pc'])}
@@ -127,7 +128,8 @@ while (True):
       payload[7] = {"variable":"peak_amp","value":"{:.2f}".format(sound_data['peak_amp_mPa'])}
       payload[8] = {"variable":"illuminance","value":"{:.2f}".format(light_data['illum_lux'])}
       payload[9] = {"variable":"particulates","value":"{:.2f}".format(particle_data['concentration'])}
-      payload[10] = {"variable":"temperature_f","value":"{:.1f}".format((air_data['T_C']*9/5)+32)}
+      if add_temperature_f:
+        payload[10] = {"variable":"temperature_f","value":"{:.1f}".format((air_data['T_C']*9/5)+32)}
       requests.post(tago_url, json=payload, headers=tago_header, timeout=2)
     else:
       # Use ThingSpeak.com cloud

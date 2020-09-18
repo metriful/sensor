@@ -1,5 +1,7 @@
 [main]
 
+# Copy this file into ~/.metriful and set the appropriate values
+
 # How often to read and log data (every 3, 100, 300 seconds)
 # Note: due to data rate limits on free cloud services, this should 
 # be set to 100 or 300 seconds, not 3 seconds.
@@ -19,6 +21,9 @@ particleSensor = PARTICLE_SENSOR_OFF
 # Choose which provider to use
 # To use the ThingSpeak cloud, set: use_Tago_cloud=False
 use_Tago_cloud = True 
+
+# Send temp in Fahrenheit to Tago.io as well as C
+add_temperature_f = False 
 
 # If using tago.io
 TAGO_DEVICE_TOKEN_STRING = "PASTE YOUR TOKEN HERE WITHIN QUOTES"

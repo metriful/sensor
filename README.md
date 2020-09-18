@@ -225,8 +225,8 @@ The steps required to set up Tago for the IoT cloud logging code example are:
 3. Select **Custom HTTPS** (HTTP) as the device type.
 4. Choose a device name (e.g. Indoor Environment Monitor) and click **Create device**
 5. On the **General Information** tab of the new device, in the section **Token & Serial Number**, click the eye icon to reveal the token (a long sequence of letters, numbers and hyphens). Copy this token.
-6. On your Raspberry Pi, copy metriful.config.example to ~/.metriful.config and configure it.
-6a. Paste the token into ~/.metriful.config as the variable **TAGO_DEVICE_TOKEN_STRING** and set the variable **useTagoCloud** as **True**.
+6. On your Raspberry Pi, copy metriful.example_config to ~/.metriful and configure it.
+6a. Paste the token into ~/.metriful as the variable **TAGO_DEVICE_TOKEN_STRING** and set the variable **useTagoCloud** as **True**.
 7. Run the IoT cloud logging example code on the internet-connected host for a few minutes to ensure at least one set of data has been logged.
 8. Verify that data are being stored in the Tago cloud by viewing the bucket’s **Variables** tab. This should show the following short names for the environment data variables:
 	* **temperature**
@@ -266,8 +266,8 @@ The steps required to set up Thingspeak for the IoT cloud logging code example a
 7. To set graph time periods to 24 hours: on each graph click the pencil icon, delete **60** from the **Results** box and put **1** in the **Days** box, then click **Save**. This changes the graph period from the last 60 values to the last 1 day. This must be done separately for both the private and public view if the channel is shared publicly.
 8. The channel can be made public, if desired, from the Thingspeak **Sharing** tab.
 9. Go to the **API Keys** tab and copy the Write API Key (a sequence of letters and numbers).
-10. On your Raspberry Pi, copy metriful.config.example to ~/.metriful.config and configure it.
-10a. Paste the API key into the metriful.config as **THINGSPEAK_API_KEY_STRING** and set the variable **useTagoCloud** as **False**.
+10. On your Raspberry Pi, copy metriful.example_config to ~/.metriful and configure it.
+10a. Paste the API key into the ~/.metriful as **THINGSPEAK_API_KEY_STRING** and set the variable **useTagoCloud** as **False**.
 
 ## License
 
