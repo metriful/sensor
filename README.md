@@ -226,7 +226,7 @@ The steps required to set up Tago for the IoT cloud logging code example are:
 4. Choose a device name (e.g. Indoor Environment Monitor) and click **Create device**
 5. On the **General Information** tab of the new device, in the section **Token & Serial Number**, click the eye icon to reveal the token (a long sequence of letters, numbers and hyphens). Copy this token.
 6. On your Raspberry Pi, copy metriful.example_config to ~/.metriful and configure it.
-6a. Paste the token into ~/.metriful as the variable **TAGO_DEVICE_TOKEN_STRING** and set the variable **useTagoCloud** as **True**.
+6a. Paste the token into ~/.metriful as the variable **TAGO_DEVICE_TOKEN_STRING** and set the variable **useTagoCloud** as **True**. Do **NOT** use quotes.
 7. Run the IoT cloud logging example code on the internet-connected host for a few minutes to ensure at least one set of data has been logged.
 8. Verify that data are being stored in the Tago cloud by viewing the bucket’s **Variables** tab. This should show the following short names for the environment data variables:
 	* **temperature**
@@ -267,7 +267,7 @@ The steps required to set up Thingspeak for the IoT cloud logging code example a
 8. The channel can be made public, if desired, from the Thingspeak **Sharing** tab.
 9. Go to the **API Keys** tab and copy the Write API Key (a sequence of letters and numbers).
 10. On your Raspberry Pi, copy metriful.example_config to ~/.metriful and configure it.
-10a. Paste the API key into the ~/.metriful as **THINGSPEAK_API_KEY_STRING** and set the variable **useTagoCloud** as **False**.
+10a. Paste the API key into the ~/.metriful as **THINGSPEAK_API_KEY_STRING** and set the variable **useTagoCloud** as **False**. Do **NOT** use quotes.
 
 ## License
 

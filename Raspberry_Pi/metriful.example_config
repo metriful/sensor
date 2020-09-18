@@ -18,6 +18,9 @@ particleSensor = PARTICLE_SENSOR_OFF
 # an internet connection to the Pi must exist. See the accompanying 
 # readme and User Guide for more information.
 
+# Save data locally to syslog
+log_to_syslog = True
+
 # Choose which provider to use
 # To use the ThingSpeak cloud, set: use_Tago_cloud=False
 use_Tago_cloud = True 
@@ -26,7 +29,7 @@ use_Tago_cloud = True
 add_temperature_f = False 
 
 # If using tago.io
-TAGO_DEVICE_TOKEN_STRING = "PASTE YOUR TOKEN HERE WITHIN QUOTES"
+TAGO_DEVICE_TOKEN_STRING = PASTE_YOUR_TOKEN_HERE_WITH_NO_QUOTES
 
 # If using thingSpeak.com
-THINGSPEAK_API_KEY_STRING = "PASTE YOUR API KEY HERE WITHIN QUOTES"
+THINGSPEAK_API_KEY_STRING = PASTE_YOUR_API_KEY_HERE_WITH_NO_QUOTES

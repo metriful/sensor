@@ -15,6 +15,8 @@
 #  https://github.com/metriful/sensor
 
 import requests
+import syslog
+import json
 from sensor_functions import *
 from configparser import ConfigParser
 from pathlib import Path
@@ -29,6 +31,7 @@ cycle_period = globals()[config.get('main', 'cycle_period')]
 particleSensor = globals()[config.get('main', 'particleSensor')]
 use_Tago_cloud = config.getboolean('main', 'use_Tago_cloud')
 add_temperature_f = config.getboolean('main', 'add_temperature_f')
+log_to_syslog = config.getboolean('main', 'log_to_syslog')
 if (use_Tago_cloud):
   TAGO_DEVICE_TOKEN_STRING = config.get('main', 'TAGO_DEVICE_TOKEN_STRING')
 else:
@@ -117,7 +120,7 @@ while (True):
   
   try:
     if use_Tago_cloud:
-      payload = [0]*11 if add_temperature_f else [0]*10;
+      payload = [0]*11 if add_temperature_f else [0]*10
       payload[0] = {"variable":"temperature","value":"{:.1f}".format(air_data['T_C'])}
       payload[1] = {"variable":"pressure","value":air_data['P_Pa']}
       payload[2] = {"variable":"humidity","value":"{:.1f}".format(air_data['H_pc'])}
@@ -130,6 +133,8 @@ while (True):
       payload[9] = {"variable":"particulates","value":"{:.2f}".format(particle_data['concentration'])}
       if add_temperature_f:
         payload[10] = {"variable":"temperature_f","value":"{:.1f}".format((air_data['T_C']*9/5)+32)}
+      if log_to_syslog:
+        syslog.syslog(json.dumps(payload))
       requests.post(tago_url, json=payload, headers=tago_header, timeout=2)
     else:
       # Use ThingSpeak.com cloud
@@ -142,6 +147,8 @@ while (True):
       payload += "&field6=" + "{:.1f}".format(sound_data['SPL_dBA'])
       payload += "&field7=" + "{:.2f}".format(light_data['illum_lux'])
       payload += "&field8=" + "{:.2f}".format(particle_data['concentration'])
+      if log_to_syslog:
+        syslog.syslog(json.dumps(payload))
       requests.post(thingspeak_url, data=payload, headers=thingspeak_header, timeout=2)
       
   except Exception as e:
