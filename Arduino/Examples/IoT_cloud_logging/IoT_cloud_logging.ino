@@ -67,7 +67,7 @@ WiFiClient client;
 
 // Buffers for assembling http POST requests
 char postBuffer[450] = {0};
-char fieldBuffer[50] = {0};
+char fieldBuffer[60] = {0};
 
 // Structs for data
 AirData_t airData = {0};
@@ -183,8 +183,9 @@ void loop() {
 // Assemble the data into the required format, then send it to the
 // Tago.io cloud as an HTTP POST request.
 void http_POST_data_Tago_cloud(void) {
-  if (client.connect("api.tago.io", 80)) { 
-    client.println("POST /data HTTP/1.1"); 
+  if (client.connect("api.tago.io", 80)) {
+    client.println("POST /data HTTP/1.1");
+    client.println("Host: api.tago.io");
     client.println("Content-Type: application/json");
     client.println("Device-Token: " TAGO_DEVICE_TOKEN_STRING);
 
@@ -240,7 +241,7 @@ void http_POST_data_Tago_cloud(void) {
     sprintf(fieldBuffer,"Content-Length: %u",len);  
     client.println(fieldBuffer); 
     client.println(); 
-    client.println(postBuffer);
+    client.print(postBuffer);
   }
   else {
     Serial.println("Connection failed");
@@ -250,8 +251,9 @@ void http_POST_data_Tago_cloud(void) {
 // Assemble the data into the required format, then send it to the
 // Thingspeak.com cloud as an HTTP POST request.
 void http_POST_data_Thingspeak_cloud(void) {
-  if (client.connect("api.thingspeak.com", 80)) { 
-    client.println("POST /update HTTP/1.1"); 
+  if (client.connect("api.thingspeak.com", 80)) {
+    client.println("POST /update HTTP/1.1");
+    client.println("Host: api.thingspeak.com");
     client.println("Content-Type: application/x-www-form-urlencoded");
     
     uint8_t T_positive_integer = airData.T_C_int_with_sign & TEMPERATURE_VALUE_MASK;
@@ -293,7 +295,7 @@ void http_POST_data_Thingspeak_cloud(void) {
     sprintf(fieldBuffer,"Content-Length: %u",len);  
     client.println(fieldBuffer); 
     client.println(); 
-    client.println(postBuffer);
+    client.print(postBuffer);
   }
   else {
     Serial.println("Connection failed");
