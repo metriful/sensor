@@ -265,7 +265,7 @@ The steps required to set up Thingspeak for the IoT cloud logging code example a
 7. To set graph time periods to 24 hours: on each graph click the pencil icon, delete **60** from the **Results** box and put **1** in the **Days** box, then click **Save**. This changes the graph period from the last 60 values to the last 1 day. This must be done separately for both the private and public view if the channel is shared publicly.
 8. The channel can be made public, if desired, from the Thingspeak **Sharing** tab.
 9. Go to the **API Keys** tab and copy the Write API Key (a sequence of letters and numbers).
-10. Paste the API key into the Metriful IoT cloud logging example code as the variable **THINGSPEAK_API_KEY_STRING** and set the variable **useTagoCloud** as **false**.
+10. Paste the API key into the Metriful IoT cloud logging example code as the variable **THINGSPEAK_API_KEY_STRING** and set the variable **useTagoCloud** as **False**.
 
 ## License
 
