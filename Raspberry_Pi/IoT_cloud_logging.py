@@ -27,6 +27,8 @@ cycle_period = CYCLE_PERIOD_100_S
 
 # Which particle sensor, if any, is attached (PPD42, SDS011, or OFF)
 particleSensor = PARTICLE_SENSOR_OFF
+# To use PPD42 set particleSensor = PARTICLE_SENSOR_PPD42
+# To use SDS011 set particleSensor = PARTICLE_SENSOR_SDS011
 
 # IoT cloud settings.
 # This example uses the free IoT cloud hosting services provided 
@@ -38,7 +40,7 @@ particleSensor = PARTICLE_SENSOR_OFF
 
 # Choose which provider to use
 use_Tago_cloud = True 
-# To use the ThingSpeak cloud, set: use_Tago_cloud=False
+# To use the ThingSpeak cloud, set: use_Tago_cloud = False
 
 # The chosen account's key/token must be inserted below.  
 if (use_Tago_cloud):
