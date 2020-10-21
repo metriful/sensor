@@ -33,3 +33,11 @@ TAGO_DEVICE_TOKEN_STRING = PASTE_YOUR_TOKEN_HERE_WITH_NO_QUOTES
 
 # If using thingSpeak.com
 THINGSPEAK_API_KEY_STRING = PASTE_YOUR_API_KEY_HERE_WITH_NO_QUOTES
+
+# BigQuery Table ID (note project_id is inferred from credentials)
+bq_dataset_id = YOUR-DATASET
+bq_table_id = YOUR-TABLE-NAME
+
+# Unique ID for this sensor (added to BQ row)
+location_name = SOME_UNIQUE_LOCATION
+
