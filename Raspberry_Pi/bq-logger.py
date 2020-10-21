@@ -161,10 +161,10 @@ while (True):
     job = client.load_table_from_file(data_as_file, table, job_config=job_config)
 
     if log_to_syslog:
-      syslog.syslog(job.result())
+      syslog.syslog('{}'.format(job.result()))
 
   except Exception as e:
     # The script will retry with the next data set
     if log_to_syslog:
-      syslog.syslog("Load data failed.\nERROR: {}".format(e))
+      syslog.syslog('Load data failed. ERROR: {}'.format(e))
 
