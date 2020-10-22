@@ -1,19 +1,8 @@
-#  IoT_cloud_logging.py
-   
-#  Example IoT data logging code for the Metriful MS430. 
-#  This example is designed to run with Python 3 on a Raspberry Pi.
-   
+#-------------------------------------------------------------------------------
+#  Log IoT data for the Metriful MS430 with Python 3 on a Raspberry Pi
 #  Environmental data values are measured and logged to an internet 
-#  cloud account every 100 seconds. The example gives the choice of 
-#  using either the Tago.io or Thingspeak.com cloud - both of these 
-#  offer a free account for low data rates. 
-
-#  Copyright 2020 Metriful Ltd. 
-#  Licensed under the MIT License - for further details see LICENSE.txt
-
-#  For code examples, datasheet and user guide, visit 
-#  https://github.com/metriful/sensor
-
+#  cloud account every 100 seconds of the value of cycle_period
+#-------------------------------------------------------------------------------
 import requests
 import syslog
 import json
@@ -25,25 +14,13 @@ from google.cloud import bigquery
 from google.oauth2 import service_account
 import datetime
 
-#########################################################
-# config
-
+# Read config
+# ---------------------------
 config = ConfigParser()
 config.read('{}/.metriful'.format(str(Path.home())))
-
-# Read the Google service account credentials
-key_path = '{}/.metriful-service-account.json'.format(str(Path.home()))
-
-credentials = service_account.Credentials.from_service_account_file(
-    key_path, scopes=["https://www.googleapis.com/auth/cloud-platform"],
-)
-
-# Set table_id to the ID of the table to create.
+location_id = config.get('main', 'location_id')
 bq_dataset_id = config.get('main', 'bq_dataset_id')
 bq_table_id = config.get('main', 'bq_table_id')
-bq_table_id_combined = '{}.{}.{}'.format(credentials.project_id, bq_dataset_id, bq_table_id)
-
-location_id = config.get('main', 'location_id')
 
 # Sensor variables
 cycle_period = globals()[config.get('main', 'cycle_period')]
@@ -51,30 +28,47 @@ particleSensor = globals()[config.get('main', 'particleSensor')]
 add_temperature_f = config.getboolean('main', 'add_temperature_f')
 log_to_syslog = config.getboolean('main', 'log_to_syslog')
 
-#########################################################
+# Read Google service account credentials and related data
+key_path = '{}/.metriful-service-account.json'.format(str(Path.home()))
+credentials = service_account.Credentials.from_service_account_file(
+    key_path, scopes=["https://www.googleapis.com/auth/cloud-platform"],
+)
+
+
+# Initialize the client and job config
+# ---------------------------
+client = bigquery.Client(credentials=credentials, project=credentials.project_id)
+dataset  = client.dataset(bq_dataset_id)
+table = dataset.table(bq_table_id)
+
+job_config = bigquery.LoadJobConfig()
+job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
+job_config.autodetect = True
+
 
 # Set up the GPIO and I2C communications bus
+# ---------------------------
 (GPIO, I2C_bus) = SensorHardwareSetup()
 
 # Apply the chosen settings to the MS430
+# ---------------------------
 if (particleSensor != PARTICLE_SENSOR_OFF):
   I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [particleSensor])
 I2C_bus.write_i2c_block_data(i2c_7bit_address, CYCLE_TIME_PERIOD_REG, [cycle_period])
 
-#########################################################
 
+# Start logging and enter cycle mode
+# ---------------------------
 print("Logging data. Press ctrl-c to exit.")
-
-# Enter cycle mode
 I2C_bus.write_byte(i2c_7bit_address, CYCLE_MODE_CMD)
 
 while (True):
-
   # Wait for the next new data release, indicated by a falling edge on READY
   while (not GPIO.event_detected(READY_pin)):
     sleep(0.05)
   
   # Now read all data from the MS430
+  # ---------------------------
 
   # Air data
   raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, AIR_DATA_READ, AIR_DATA_BYTES)
@@ -104,67 +98,63 @@ while (True):
   raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, PARTICLE_DATA_READ, PARTICLE_DATA_BYTES)
   particle_data = extractParticleData(raw_data, particleSensor)
     
-  # Assemble the data into the required format, then send it to the cloud
-  # as an HTTP POST request.
+  # Assemble the data into the required format, then send it to BigQuery
+  # ---------------------------
   
-  # For both example cloud providers, the following quantities will be sent:
-  # 1 Temperature/C
-  # 2 Pressure/Pa
-  # 3 Humidity/%
-  # 4 Air quality index
-  # 5 bVOC/ppm
-  # 6 SPL/dBA
-  # 7 Illuminance/lux
-  # 8 Particle concentration
+  # The following quantities will be sent:
+  #   Temperature/C
+  #   Pressure/Pa
+  #   Relative Humidity/%
+  #   Air Quality Index
+  #   Air Quality Assessment Summary (Good, Bad, etc.)
+  #   bVOC/ppm (bVOCeq)
+  #   SPL/dBA
+  #   Peak Sound Amplitude/mPa 
+  #   Illuminance/lux
+  #   Particle concentration/ppL (micrograms per cubic meter)
+  #   Timestamp
+  #   Location ID
+  #   Temperature/F
   
-  # Additionally, for Tago, the following is sent:
-  # 9  Air Quality Assessment summary (Good, Bad, etc.) 
-  # 10 Peak sound amplitude / mPa 
-  # 11 Temperature/F
-  
+  data = {
+    "temperature":"{:.1f}".format(air_data['T_C']),
+    "pressure":air_data['P_Pa'],
+    "humidity":"{:.1f}".format(air_data['H_pc']),
+    "aqi":"{:.1f}".format(air_quality_data['AQI']),
+    "aqi_string":interpret_AQI_value(air_quality_data['AQI']),
+    "bvoc":"{:.2f}".format(air_quality_data['bVOC']),
+    "spl":"{:.1f}".format(sound_data['SPL_dBA']),
+    "peak_amp":"{:.2f}".format(sound_data['peak_amp_mPa']),
+    "illuminance":"{:.2f}".format(light_data['illum_lux']),
+    "particulates":"{:.2f}".format(particle_data['concentration']),
+    "timestamp":datetime.datetime.now().isoformat(),
+    "location":location_id,
+    "temperature_f":"{:.1f}".format((air_data['T_C']*9/5)+32)
+  }
+
+  data_json = json.dumps(data)
+
+  print(data_json)
+
+  if log_to_syslog:
+    syslog.syslog(data_json)
+
+  # Wrap the data into a file-like object and pass it to load_table_from_file instead of load_table_from_json
+  # ---------------------------
+  # https://googleapis.dev/python/bigquery/latest/generated/google.cloud.bigquery.client.Client.html#google.cloud.bigquery.client.Client.load_table_from_json
+  data_as_file = io.StringIO(data_json)
+
   try:
-    data = {
-      "temperature":"{:.1f}".format(air_data['T_C']),
-      "pressure":air_data['P_Pa'],
-      "humidity":"{:.1f}".format(air_data['H_pc']),
-      "aqi":"{:.1f}".format(air_quality_data['AQI']),
-      "aqi_string":interpret_AQI_value(air_quality_data['AQI']),
-      "bvoc":"{:.2f}".format(air_quality_data['bVOC']),
-      "spl":"{:.1f}".format(sound_data['SPL_dBA']),
-      "peak_amp":"{:.2f}".format(sound_data['peak_amp_mPa']),
-      "illuminance":"{:.2f}".format(light_data['illum_lux']),
-      "particulates":"{:.2f}".format(particle_data['concentration']),
-      "timestamp":datetime.datetime.now().isoformat(),
-      "location":location_id,
-      "temperature_f":"{:.1f}".format((air_data['T_C']*9/5)+32)
-    }
-
-    data_json = json.dumps(data)
-
-    if log_to_syslog:
-      syslog.syslog(data_json)
-
-    # Initialize the client
-    # ---------------------------
-    client = bigquery.Client(credentials=credentials, project=credentials.project_id,)
-    dataset  = client.dataset(bq_dataset_id)
-    table = dataset.table(bq_table_id)
-
-    job_config = bigquery.LoadJobConfig()
-    job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
-    job_config.autodetect = True
-
-    # Wrap the data into a file-like object and pass it to load_table_from_file instead of load_table_from_json
-    # ---------------------------
-    # https://googleapis.dev/python/bigquery/latest/generated/google.cloud.bigquery.client.Client.html#google.cloud.bigquery.client.Client.load_table_from_json
-    data_as_file = io.StringIO(data_json)
     job = client.load_table_from_file(data_as_file, table, job_config=job_config)
+
+    print('{}'.format(job.result()))
 
     if log_to_syslog:
       syslog.syslog('{}'.format(job.result()))
 
   except Exception as e:
-    # The script will retry with the next data set
+    print('Load data failed. {} ERROR: {}'.format(job.result(), e))
+
     if log_to_syslog:
-      syslog.syslog('Load data failed. ERROR: {}'.format(e))
+      syslog.syslog('Load data failed. {} ERROR: {}'.format(job.result(), e))
 
