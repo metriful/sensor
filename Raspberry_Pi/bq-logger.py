@@ -144,6 +144,9 @@ while (True):
   # https://googleapis.dev/python/bigquery/latest/generated/google.cloud.bigquery.client.Client.html#google.cloud.bigquery.client.Client.load_table_from_json
   data_as_file = io.StringIO(data_json)
 
+  # Initialize here to have the output for exceptions
+  job = None
+
   try:
     job = client.load_table_from_file(data_as_file, table, job_config=job_config)
 
