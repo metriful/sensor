@@ -127,7 +127,7 @@ while (True):
     "peak_amp":"{:.2f}".format(sound_data['peak_amp_mPa']),
     "illuminance":"{:.2f}".format(light_data['illum_lux']),
     "particulates":"{:.2f}".format(particle_data['concentration']),
-    "timestamp":datetime.datetime.now().isoformat(),
+    "timestamp":datetime.datetime.utcnow().isoformat(),
     "location":location_id,
     "temperature_f":"{:.1f}".format((air_data['T_C']*9/5)+32)
   }
