@@ -105,7 +105,12 @@ The example programs for Raspberry Pi use Python 3 and are provided in the **Ras
 
 ### First time Raspberry Pi setup
 
-This setup assumes that you are using Raspbian Buster, which comes with all required Python packages already installed (the packages used are: **RPi.GPIO**, **smbus** and **requests**).
+This setup assumes that you are using the full version of Raspberry Pi OS (Raspbian) Buster, which comes with all required Python packages already installed (the packages used are: **RPi.GPIO**, **smbus** and **requests**). If you are using the minimal Raspberry Pi OS Lite image instead you will need to install the following packages:
+
+```
+sudo apt-get update
+sudo apt-get install -y i2c-tools git python3-dev python3-pip python3-smbus RPi.GPIO
+```
 
 1. Enable I2C on your Raspberry Pi using the raspi-config utility by opening a terminal and running:
 	```
