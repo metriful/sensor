@@ -4,7 +4,7 @@
    Example code for using the Metriful MS430 interrupt outputs. 
    
    Light and sound interrupts are configured and the program then 
-   waits indefinitely. When an interrupt occurs, a message prints over
+   waits forever. When an interrupt occurs, a message prints over
    the serial port, the interrupt is cleared (if set to latch type), 
    and the program returns to waiting. 
    View the output in the Serial Monitor.
@@ -43,9 +43,6 @@ bool enableSoundInterrupts = true;
 uint8_t sound_int_type = SOUND_INT_TYPE_LATCH;
 uint16_t sound_thres_mPa = 100;
 
-// The I2C address of the Metriful board
-uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
-
 // END OF USER-EDITABLE SETTINGS
 //////////////////////////////////////////////////////////
 
@@ -54,7 +51,7 @@ uint8_t transmit_buffer[1] = {0};
 
 void setup() {  
   // Initialize the host pins, set up the serial port and reset
-  SensorHardwareSetup(i2c_7bit_address); 
+  SensorHardwareSetup(I2C_ADDRESS); 
   
   // check that the chosen light threshold is a valid value 
   if (light_int_thres_lux_i > MAX_LUX_VALUE) {
@@ -74,31 +71,31 @@ void setup() {
   if (enableSoundInterrupts) {
     // Set the interrupt type (latch or comparator)
     transmit_buffer[0] = sound_int_type;
-    TransmitI2C(i2c_7bit_address, SOUND_INTERRUPT_TYPE_REG, transmit_buffer, 1);
+    TransmitI2C(I2C_ADDRESS, SOUND_INTERRUPT_TYPE_REG, transmit_buffer, 1);
     
     // Set the threshold
-    setSoundInterruptThreshold(i2c_7bit_address, sound_thres_mPa);
+    setSoundInterruptThreshold(I2C_ADDRESS, sound_thres_mPa);
     
     // Enable the interrupt
     transmit_buffer[0] = ENABLED;
-    TransmitI2C(i2c_7bit_address, SOUND_INTERRUPT_ENABLE_REG, transmit_buffer, 1);
+    TransmitI2C(I2C_ADDRESS, SOUND_INTERRUPT_ENABLE_REG, transmit_buffer, 1);
   }
 
   if (enableLightInterrupts) {
     // Set the interrupt type (latch or comparator)
     transmit_buffer[0] = light_int_type;
-    TransmitI2C(i2c_7bit_address, LIGHT_INTERRUPT_TYPE_REG, transmit_buffer, 1);
+    TransmitI2C(I2C_ADDRESS, LIGHT_INTERRUPT_TYPE_REG, transmit_buffer, 1);
     
     // Set the threshold
-    setLightInterruptThreshold(i2c_7bit_address, light_int_thres_lux_i, light_int_thres_lux_f2dp);
+    setLightInterruptThreshold(I2C_ADDRESS, light_int_thres_lux_i, light_int_thres_lux_f2dp);
     
     // Set the interrupt polarity
     transmit_buffer[0] = light_int_polarity;
-    TransmitI2C(i2c_7bit_address, LIGHT_INTERRUPT_POLARITY_REG, transmit_buffer, 1);
+    TransmitI2C(I2C_ADDRESS, LIGHT_INTERRUPT_POLARITY_REG, transmit_buffer, 1);
     
     // Enable the interrupt
     transmit_buffer[0] = ENABLED;
-    TransmitI2C(i2c_7bit_address, LIGHT_INTERRUPT_ENABLE_REG, transmit_buffer, 1);
+    TransmitI2C(I2C_ADDRESS, LIGHT_INTERRUPT_ENABLE_REG, transmit_buffer, 1);
   }
 
   // Wait for the serial port to be ready, for displaying the output
@@ -118,7 +115,7 @@ void loop() {
     Serial.println("LIGHT INTERRUPT.");
     if (light_int_type == LIGHT_INT_TYPE_LATCH) {
       // Latch type interrupts remain set until cleared by command
-      TransmitI2C(i2c_7bit_address, LIGHT_INTERRUPT_CLR_CMD, 0, 0);
+      TransmitI2C(I2C_ADDRESS, LIGHT_INTERRUPT_CLR_CMD, 0, 0);
     }
   }
   
@@ -127,7 +124,7 @@ void loop() {
     Serial.println("SOUND INTERRUPT.");
     if (sound_int_type == SOUND_INT_TYPE_LATCH) {
       // Latch type interrupts remain set until cleared by command
-      TransmitI2C(i2c_7bit_address, SOUND_INTERRUPT_CLR_CMD, 0, 0);
+      TransmitI2C(I2C_ADDRESS, SOUND_INTERRUPT_CLR_CMD, 0, 0);
     }
   }
   

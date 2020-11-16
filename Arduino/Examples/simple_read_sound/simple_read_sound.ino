@@ -3,8 +3,9 @@
 
    Example code for using the Metriful MS430 to measure sound. 
    
-   Measures and displays the sound data once. 
-   View the output in the Serial Monitor.
+   Demonstrates multiple ways of reading and displaying the sound data. 
+   View the output in the Serial Monitor. The other data can be measured
+   and displayed in a similar way.
 
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
@@ -15,24 +16,10 @@
 
 #include <Metriful_sensor.h>
 
-//////////////////////////////////////////////////////////
-// USER-EDITABLE SETTINGS
-
-// The I2C address of the Metriful board
-uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
-
-// Whether to use floating point representation of numbers (uses more 
-// host resources)
-bool useFloatingPoint = false;
-
-// END OF USER-EDITABLE SETTINGS
-//////////////////////////////////////////////////////////
-
-uint8_t receive_buffer[1] = {0};
 
 void setup() {  
   // Initialize the host pins, set up the serial port and reset:
-  SensorHardwareSetup(i2c_7bit_address); 
+  SensorHardwareSetup(I2C_ADDRESS); 
   
   // Wait for the serial port to be ready, for displaying the output
   while (!Serial) {
@@ -51,7 +38,7 @@ void setup() {
   ready_assertion_event = false;
   
   // Initiate an on-demand data measurement
-  TransmitI2C(i2c_7bit_address, ON_DEMAND_MEASURE_CMD, 0, 0);
+  TransmitI2C(I2C_ADDRESS, ON_DEMAND_MEASURE_CMD, 0, 0);
 
   // Now wait for the ready signal (falling edge) before continuing
   while (!ready_assertion_event) {
@@ -61,22 +48,49 @@ void setup() {
   // We now know that newly measured data are ready to read.
 
   ////////////////////////////////////////////////////////////////////
-
-  // Read all sound data in one transaction, interpreting the received bytes as a SoundData_t struct:
-  SoundData_t soundData = {0};
-  ReceiveI2C(i2c_7bit_address, SOUND_DATA_READ, (uint8_t *) &soundData, SOUND_DATA_BYTES);
   
-  // Print the values over the serial port
-  if (useFloatingPoint) {
-    // Convert values to floating point representation:
-    SoundData_F_t soundDataF = {0};
-    convertSoundDataF(&soundData, &soundDataF);
-    printSoundDataF(&soundDataF);
-  }
-  else {
-    // The data remain in integer representation 
-    printSoundData(&soundData, false);
-  }
+  // There are multiple ways to read and display the data
+  
+  
+  // 1. Simplest way: use the example float (_F) functions
+  
+  // Read the sound data from the board
+  SoundData_F_t soundDataF = getSoundDataF(I2C_ADDRESS);
+  
+  // Print all of the sound measurements to the serial monitor
+  printSoundDataF(&soundDataF);
+  
+  Serial.println("-----------------------------");
+  
+  
+  // 2. After reading from the MS430, you can also access and print the 
+  // float data directly from the struct:
+  Serial.print("The sound pressure level is: ");
+  Serial.print(soundDataF.SPL_dBA, 1);   // print to 1 decimal place
+  Serial.println(" dBA");
+  
+  Serial.println("-----------------------------");
+  
+  
+  // 3. If host resources are limited, avoid using floating point and 
+  // instead use the integer versions (without "F" in the name)
+  SoundData_t soundData = getSoundData(I2C_ADDRESS);
+  
+  // Print to the serial monitor
+  printSoundData(&soundData, false); 
+  // If the second argument is "true", data are printed as columns.
+  
+  Serial.println("-----------------------------");
+  
+  
+  // 4. Access and print integer data directly from the struct:
+  Serial.print("The sound pressure level is: ");
+  Serial.print(soundData.SPL_dBA_int);    // the integer part of the value
+  Serial.print(".");                      // the decimal point
+  Serial.print(soundData.SPL_dBA_fr_1dp); // the fractional part (1 decimal place) 
+  Serial.println(" dBA");
+
+  Serial.println("-----------------------------");
 }
 
 void loop() {

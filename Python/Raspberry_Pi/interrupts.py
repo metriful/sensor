@@ -14,8 +14,7 @@
 #  For code examples, datasheet and user guide, visit 
 #  https://github.com/metriful/sensor
 
-from time import sleep
-from sensor_functions import *
+from sensor_package.sensor_functions import *
 
 #########################################################
 # USER-EDITABLE SETTINGS
@@ -45,7 +44,8 @@ sound_thres_mPa = 100
 #########################################################
 
 if ((light_thres_lux_i + (float(light_thres_lux_f2dp)/100.0)) > MAX_LUX_VALUE):
-  raise Exception('The chosen light interrupt threshold exceeds the maximum allowed value.')
+  raise Exception("The chosen light interrupt threshold exceeds the "
+                  "maximum allowed value of " + str(MAX_LUX_VALUE) + " lux")
 
 # Set up the GPIO and I2C communications bus
 (GPIO, I2C_bus) = SensorHardwareSetup()

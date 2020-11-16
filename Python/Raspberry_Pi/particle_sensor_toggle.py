@@ -4,7 +4,7 @@
 #  control signal from one of the Pi pins, which can be used to turn 
 #  the particle sensor on and off. An external transistor circuit is
 #  also needed - this will gate the sensor power supply according to 
-#  the control signal.
+#  the control signal. Further details are given in the User Guide.
    
 #  The program continually measures and displays all environment data
 #  in a repeating cycle. The user can view the output in the Serial 
@@ -19,7 +19,7 @@
 #  For code examples, datasheet and user guide, visit 
 #  https://github.com/metriful/sensor
 
-from sensor_functions import *
+from sensor_package.sensor_functions import *
 
 #########################################################
 # USER-EDITABLE SETTINGS
@@ -29,17 +29,13 @@ from sensor_functions import *
 # its data.
 cycle_period = CYCLE_PERIOD_100_S 
 
-# Which particle sensor, if any, is attached 
-# (PARTICLE_SENSOR_X with X = PPD42, SDS011, or OFF)
-particleSensor = PARTICLE_SENSOR_SDS011
-
 # How to print the data: If print_data_as_columns = True,
 # data are columns of numbers, useful to copy/paste to a spreadsheet
 # application. Otherwise, data are printed with explanatory labels and units.
 print_data_as_columns = True
 
 # Particle sensor power control options
-off_cycles = 1;  # leave the sensor off for this many cycles between reads
+off_cycles = 2;  # leave the sensor off for this many cycles between reads
 particle_sensor_control_pin = 10; # Pi pin number which outputs the control signal
 
 # END OF USER-EDITABLE SETTINGS
@@ -51,18 +47,17 @@ particle_sensor_control_pin = 10; # Pi pin number which outputs the control sign
 # Set up the particle sensor control, and turn it off initially
 GPIO.setup(particle_sensor_control_pin, GPIO.OUT)
 GPIO.output(particle_sensor_control_pin, 0)
-particleSensorIsOn = False
-particleSensor_count = 0
+particle_sensor_is_on = False
+particle_sensor_count = 0
 
 # Apply the chosen settings
-if (particleSensor != PARTICLE_SENSOR_OFF):
-  I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [particleSensor])
+I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [PARTICLE_SENSOR])
 I2C_bus.write_i2c_block_data(i2c_7bit_address, CYCLE_TIME_PERIOD_REG, [cycle_period])
 
 #########################################################
 
 sound_data = extractSoundData([0]*SOUND_DATA_BYTES)
-particle_data = extractParticleData([0]*PARTICLE_DATA_BYTES, particleSensor)
+particle_data = extractParticleData([0]*PARTICLE_DATA_BYTES, PARTICLE_SENSOR)
 
 print("Entering cycle mode and waiting for data. Press ctrl-c to exit.")
 
@@ -78,38 +73,33 @@ while (True):
   # sound data will be printed if no reading is done on this loop.
 
   # Air data
-  raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, AIR_DATA_READ, AIR_DATA_BYTES)
-  air_data = extractAirData(raw_data)
+  air_data = get_air_data(I2C_bus)
   writeAirData(None, air_data, print_data_as_columns)
 
   # Air quality data
   # The initial self-calibration of the air quality data may take several
   # minutes to complete. During this time the accuracy parameter is zero 
   # and the data values are not valid.
-  raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, AIR_QUALITY_DATA_READ, AIR_QUALITY_DATA_BYTES)
-  air_quality_data = extractAirQualityData(raw_data)
+  air_quality_data = get_air_quality_data(I2C_bus)
   writeAirQualityData(None, air_quality_data, print_data_as_columns)
 
   # Light data
-  raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, LIGHT_DATA_READ, LIGHT_DATA_BYTES)
-  light_data = extractLightData(raw_data)
+  light_data = get_light_data(I2C_bus)
   writeLightData(None, light_data, print_data_as_columns)
 
-  # Sound data - only read when particle sensor is off
-  if (not particleSensorIsOn):
-    raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, SOUND_DATA_READ, SOUND_DATA_BYTES)
-    sound_data = extractSoundData(raw_data)
+  # Sound data - only read new data when particle sensor is off
+  if (not particle_sensor_is_on):
+    sound_data = get_sound_data(I2C_bus)
   writeSoundData(None, sound_data, print_data_as_columns)
 
   # Particle data
-  # This requires the connection of a particulate sensor (invalid 
+  # This requires the connection of a particulate sensor (zero/invalid 
   # values will be obtained if this sensor is not present).
   # Also note that, due to the low pass filtering used, the 
   # particle data become valid after an initial initialization 
   # period of approximately one minute.
-  if (particleSensorIsOn):
-    raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, PARTICLE_DATA_READ, PARTICLE_DATA_BYTES)
-    particle_data = extractParticleData(raw_data, particleSensor)
+  if (particle_sensor_is_on):
+    particle_data = get_particle_data(I2C_bus, PARTICLE_SENSOR)
   writeParticleData(None, particle_data, print_data_as_columns)
   
   if print_data_as_columns:
@@ -118,23 +108,23 @@ while (True):
     print("-------------------------------------------")
   
   #Turn the particle sensor on/off if required 
-  if (particleSensorIsOn):
+  if (particle_sensor_is_on):
     # Stop the particle detection on the MS430
     I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [PARTICLE_SENSOR_OFF])
       
     # Turn off the hardware:
     GPIO.output(particle_sensor_control_pin, 0)
-    particleSensorIsOn = False
+    particle_sensor_is_on = False
   else:
-    particleSensor_count += 1
-    if (particleSensor_count >= off_cycles):
+    particle_sensor_count += 1
+    if (particle_sensor_count >= off_cycles):
       # Turn on the hardware:
       GPIO.output(particle_sensor_control_pin, 1)
       
       # Start the particle detection on the MS430
-      I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [particleSensor])
+      I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [PARTICLE_SENSOR])
       
-      particleSensor_count = 0
-      particleSensorIsOn = True
+      particle_sensor_count = 0
+      particle_sensor_is_on = True
   
   

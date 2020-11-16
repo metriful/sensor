@@ -5,14 +5,14 @@
    control signal from one of the host's pins, which can be used to turn 
    the particle sensor on and off. An external transistor circuit is
    also needed - this will gate the sensor power supply according to 
-   the control signal.
+   the control signal. Further details are given in the User Guide.
    
    The program continually measures and displays all environment data
    in a repeating cycle. The user can view the output in the Serial 
    Monitor. After reading the data, the particle sensor is powered off 
    for a chosen number of cycles ("off_cycles"). It is then powered on 
    and read before being powered off again. Sound data are ignored 
-   while the particle sensor is on, to avoid fan noise.
+   while the particle sensor is on, to avoid its fan noise.
 
    Copyright 2020 Metriful Ltd. 
    Licensed under the MIT License - for further details see LICENSE.txt
@@ -31,25 +31,18 @@
 // its data.
 uint8_t cycle_period = CYCLE_PERIOD_100_S;
 
-// The I2C address of the Metriful board
-uint8_t i2c_7bit_address = I2C_ADDR_7BIT_SB_OPEN;
-
 // How to print the data over the serial port. If printDataAsColumns = true,
 // data are columns of numbers, useful for transferring to a spreadsheet
 // application. Otherwise, data are printed with explanatory labels and units.
-bool printDataAsColumns = true;
-
-// Which particle sensor is attached (PPD42, SDS011, or OFF)
-ParticleSensor_t particleSensor = SDS011;
+bool printDataAsColumns = false;
 
 // Particle sensor power control options
-uint8_t off_cycles = 1;  // leave the sensor off for this many cycles between reads
+uint8_t off_cycles = 2;  // leave the sensor off for this many cycles between reads
 uint8_t particle_sensor_control_pin = 10; // host pin number which outputs the control signal
 bool particle_sensor_ON_state = true; 
 // particle_sensor_ON_state is the required polarity of the control 
-// signal; true means +V is output to turn the sensor on (use this for 
-// 3.3 V hosts). false means 0V is output to turn the sensor on (use
-// this for 5 V hosts). The User Guide gives example switching circuits.
+// signal; true means +V is output to turn the sensor on, while false
+// means 0 V is output. Use true for 3.3 V hosts and false for 5 V hosts.
 
 // END OF USER-EDITABLE SETTINGS
 //////////////////////////////////////////////////////////
@@ -69,7 +62,7 @@ uint8_t particleSensor_count = 0;
 
 void setup() {  
   // Initialize the host pins, set up the serial port and reset:
-  SensorHardwareSetup(i2c_7bit_address); 
+  SensorHardwareSetup(I2C_ADDRESS); 
   
   // Set up the particle sensor control, and turn it off initially
   pinMode(particle_sensor_control_pin, OUTPUT);
@@ -77,12 +70,10 @@ void setup() {
   particleSensorIsOn = false;
   
   // Apply chosen settings to the MS430
-  if (particleSensor != OFF) {
-    transmit_buffer[0] = particleSensor;
-    TransmitI2C(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, transmit_buffer, 1);
-  }
+  transmit_buffer[0] = PARTICLE_SENSOR;
+  TransmitI2C(I2C_ADDRESS, PARTICLE_SENSOR_SELECT_REG, transmit_buffer, 1);
   transmit_buffer[0] = cycle_period;
-  TransmitI2C(i2c_7bit_address, CYCLE_TIME_PERIOD_REG, transmit_buffer, 1);
+  TransmitI2C(I2C_ADDRESS, CYCLE_TIME_PERIOD_REG, transmit_buffer, 1);
 
   // Wait for the serial port to be ready, for displaying the output
   while (!Serial) {
@@ -91,7 +82,7 @@ void setup() {
 
   Serial.println("Entering cycle mode and waiting for data.");
   ready_assertion_event = false;
-  TransmitI2C(i2c_7bit_address, CYCLE_MODE_CMD, 0, 0);
+  TransmitI2C(I2C_ADDRESS, CYCLE_MODE_CMD, 0, 0);
 }
 
 
@@ -110,32 +101,33 @@ void loop() {
   */ 
   
   // Air data
-  ReceiveI2C(i2c_7bit_address, AIR_DATA_READ, (uint8_t *) &airData, AIR_DATA_BYTES);
+  ReceiveI2C(I2C_ADDRESS, AIR_DATA_READ, (uint8_t *) &airData, AIR_DATA_BYTES);
   
   /* Air quality data
   The initial self-calibration of the air quality data may take several
   minutes to complete. During this time the accuracy parameter is zero 
   and the data values are not valid.
   */ 
-  ReceiveI2C(i2c_7bit_address, AIR_QUALITY_DATA_READ, (uint8_t *) &airQualityData, AIR_QUALITY_DATA_BYTES);
+  ReceiveI2C(I2C_ADDRESS, AIR_QUALITY_DATA_READ, (uint8_t *) &airQualityData, AIR_QUALITY_DATA_BYTES);
   
   // Light data
-  ReceiveI2C(i2c_7bit_address, LIGHT_DATA_READ, (uint8_t *) &lightData, LIGHT_DATA_BYTES);
+  ReceiveI2C(I2C_ADDRESS, LIGHT_DATA_READ, (uint8_t *) &lightData, LIGHT_DATA_BYTES);
   
   // Sound data - only read when particle sensor is off
   if (!particleSensorIsOn) {
-    ReceiveI2C(i2c_7bit_address, SOUND_DATA_READ, (uint8_t *) &soundData, SOUND_DATA_BYTES);
+    ReceiveI2C(I2C_ADDRESS, SOUND_DATA_READ, (uint8_t *) &soundData, SOUND_DATA_BYTES);
   }
   
   /* Particle data
   This requires the connection of a particulate sensor (invalid 
   values will be obtained if this sensor is not present).
+  Specify your sensor model (PPD42 or SDS011) in Metriful_sensor.h
   Also note that, due to the low pass filtering used, the 
   particle data become valid after an initial initialization 
   period of approximately one minute.
   */ 
   if (particleSensorIsOn) {
-    ReceiveI2C(i2c_7bit_address, PARTICLE_DATA_READ, (uint8_t *) &particleData, PARTICLE_DATA_BYTES);
+    ReceiveI2C(I2C_ADDRESS, PARTICLE_DATA_READ, (uint8_t *) &particleData, PARTICLE_DATA_BYTES);
   }
 
   // Print all data to the serial port. The previous loop's particle or
@@ -144,14 +136,14 @@ void loop() {
   printAirQualityData(&airQualityData, printDataAsColumns);
   printLightData(&lightData, printDataAsColumns);
   printSoundData(&soundData, printDataAsColumns);
-  printParticleData(&particleData, printDataAsColumns, particleSensor);
+  printParticleData(&particleData, printDataAsColumns, PARTICLE_SENSOR);
   Serial.println();
   
   // Turn the particle sensor on/off if required 
   if (particleSensorIsOn) {
     // Stop the particle detection on the MS430
     transmit_buffer[0] = OFF;
-    TransmitI2C(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, transmit_buffer, 1);
+    TransmitI2C(I2C_ADDRESS, PARTICLE_SENSOR_SELECT_REG, transmit_buffer, 1);
       
     // Turn off the hardware:
     digitalWrite(particle_sensor_control_pin, !particle_sensor_ON_state);
@@ -164,8 +156,8 @@ void loop() {
       digitalWrite(particle_sensor_control_pin, particle_sensor_ON_state);
       
       // Start the particle detection on the MS430
-      transmit_buffer[0] = particleSensor;
-      TransmitI2C(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, transmit_buffer, 1);
+      transmit_buffer[0] = PARTICLE_SENSOR;
+      TransmitI2C(I2C_ADDRESS, PARTICLE_SENSOR_SELECT_REG, transmit_buffer, 1);
       
       particleSensor_count = 0;
       particleSensorIsOn = true;

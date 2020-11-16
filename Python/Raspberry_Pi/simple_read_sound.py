@@ -3,7 +3,9 @@
 #  Example code for using the Metriful MS430 to measure sound. 
 #  This example is designed to run with Python 3 on a Raspberry Pi.
    
-#  Measures and displays the sound data once. 
+#  Demonstrates multiple ways of reading and displaying the sound data. 
+#  View the output in the terminal. The other data can be measured
+#  and displayed in a similar way.
 
 #  Copyright 2020 Metriful Ltd. 
 #  Licensed under the MIT License - for further details see LICENSE.txt
@@ -11,8 +13,7 @@
 #  For code examples, datasheet and user guide, visit 
 #  https://github.com/metriful/sensor
 
-from time import sleep
-from sensor_functions import *
+from sensor_package.sensor_functions import *
 
 # Set up the GPIO and I2C communications bus
 (GPIO, I2C_bus) = SensorHardwareSetup()
@@ -32,27 +33,35 @@ I2C_bus.write_byte(i2c_7bit_address, ON_DEMAND_MEASURE_CMD)
 while (not GPIO.event_detected(READY_pin)):
   sleep(0.05)
   
-# We now know that newly measured data are ready to read.
+# New data are now ready to read.
 
 #########################################################
 
-# SOUND DATA
+# There are multiple ways to read and display the data
+  
+  
+# 1. Simplest way: use the example functions
 
-# Read all sound data in one transaction
+# Read all sound data from the MS430 and convert to a Python dictionary
+sound_data = get_sound_data(I2C_bus)
+
+# Then print all the values onto the screen
+writeSoundData(None, sound_data, False)
+
+# Or you can use the dictionary values directly, for example:
+print("The sound pressure level is: " + str(sound_data['SPL_dBA']) + " dBA")
+
+
+# 2. Read the raw data bytes from the MS430 using an I2C function 
 raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, SOUND_DATA_READ, SOUND_DATA_BYTES)
 
-# Use the example function to decode the values and return then as a Python dictionary
+# Decode the values and return then as a Python dictionary
 sound_data = extractSoundData(raw_data)
 
-# Print the values obtained
-print("A-weighted sound pressure level = {:.1f} dBA".format(sound_data['SPL_dBA']))
-for i in range(0,SOUND_FREQ_BANDS):
-  print("Frequency band " + str(i+1) + " (" + str(sound_band_mids_Hz[i]) 
-                          + " Hz) SPL = {:.1f} dB".format(sound_data['SPL_bands_dB'][i]))
-print("Peak sound amplitude = {:.2f} mPa".format(sound_data['peak_amp_mPa']))
-
-# Or just use the following function for printing:
+# Print the dictionary values in the same ways as before
 writeSoundData(None, sound_data, False)
+print("The sound pressure level is: " + str(sound_data['SPL_dBA']) + " dBA")
+
 
 #########################################################
 

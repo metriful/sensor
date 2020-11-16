@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<!--Copyright 2020 Metriful Ltd. Licensed under the MIT License.-->
+<head>
+<meta charset='UTF-8'>
+<title>Indoor Environment Data</title>
+<script src='https://cdn.plot.ly/plotly-1.56.0.min.js' charset='utf-8'></script>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<style>
+.tx {
+ font-family: Verdana, sans-serif;
+ text-align:center;
+ font-weight:normal;
+}
+</style>
+</head>
+<body style='background-color:#ededed;' onload='plotBufferedData()'>
+<h3 class='tx'>Indoor Environment Data</h3>
+<div id='tdata' class='tx'></div>
+<div id='error' class='tx'>Incomplete load: please refresh the page.</div>
+<div id='grid' style='display: flex;'></div>
+<br>
+<div class='tx'>
+<button type='button' onclick='makeCSVfile()'>Download CSV data</button>
+</div>
+<br>
+<p class='tx'><a href='https://www.sensor.metriful.com'>sensor.metriful.com</a></p>
+<br>
+<a id='lnk' href='' style='visibility:hidden;'></a>
+<script>
+var max_data_length = 1000;
+var x_values = [];
+var data = [];
+var names = ['Air Quality Index','Temperature','Pressure','Humidity',
+'Sound Level','Illuminance','Breath VOC','Particulates'];
+var units = new Map([['AQI',''],['T','\u00B0C'],['P','Pa'], ['H','%'],
+['SPL','dBA'],['lux','lux'],['bVOC','ppm'],['part','\u00B5g/m\u00B3']]);
+var titles = []
+const decimalPlaces = [1,1,0,1,1,2,2,2];
+const AQI_position = 0;
+var Ngraphs = 0;
+var isMobile = false;
+var doPlot = true;
+var includeParticles = true;
+var delay_ms = 0;
+var errorString = 'Incomplete load: please refresh the page.';
+
+// Put a leading zero on a string to get correct time and date format
+function padString(s) {
+ if (s.length == 1) {
+  return ('0' + s);
+ }
+ return s;
+}
+
+// Get time as a string in the format HH:MM:SS
+function makeTimeString(dateNum) {
+ d = new Date(dateNum);
+ return (padString(d.getHours().toString()) 
+ + ':' + padString(d.getMinutes().toString()) 
+ + ':' + padString(d.getSeconds().toString()));
+}
+
+// Get time and date as a string in the format YYYY-mm-DD HH:MM:SS
+function makeTimeDateString(dateNum) {
+ d = new Date(dateNum);
+ return (d.getFullYear().toString()
+ + '-' + padString((d.getMonth()+1).toString()) 
+ + '-' + padString(d.getDate().toString())
+ + ' ' + makeTimeString(dateNum));
+}
+
+// Make graphs using Plotly
+function plotGraph(plotname, i) {
+ P = document.getElementById(plotname);
+ Plotly.newPlot(P, [{
+ x: x_values,
+ y: data[i],
+ mode: 'lines'}], {
+ title: {
+  text: titles[i],
+  font: {
+   family: 'verdana, sans-serif',
+   size: 15},
+  xref: 'paper',
+  x: (isMobile ? 0 : 0.5),
+  yref: 'paper',
+  y: 1,
+  yanchor:'bottom',
+  pad: {b:15}},
+ plot_bgcolor:'#f5f6f7',
+ paper_bgcolor:'#ededed',
+ margin: {
+  l: 60,
+  r: 30,
+  b: 0,
+  t: 40},
+ xaxis: {
+  nticks: (isMobile ? 3 : 7),
+  showline: true, 
+  automargin: true,
+  mirror: 'ticks', 
+  linewidth: 1},
+ yaxis: {
+  automargin: true,
+  showline: true, 
+  mirror: 'ticks', 
+  linewidth: 1},
+ autosize: true},
+ {responsive: true, displaylogo:false, 
+ modeBarButtonsToRemove: ['toggleSpikelines', 
+ 'hoverClosestCartesian','hoverCompareCartesian','zoomIn2d',
+ 'zoomOut2d','autoScale2d']});
+}
+
+// Provide a text interpretation of the air quality index value
+function interpretAQI(AQI) {
+  if (AQI < 50) {
+    return 'Good';
+  }
+  else if (AQI < 100) {
+    return 'Acceptable';
+  }
+  else if (AQI < 150) {
+    return 'Substandard';
+  }
+  else if (AQI < 200) {
+    return 'Poor';
+  }
+  else if (AQI < 300) {
+    return 'Bad';
+  }
+  else {
+    return 'Very bad';
+  }
+}
+
+// Display data as text (if graphs cannot be created)
+function showTextData() {
+ var j = x_values.length - 1;
+ const dn = Date.now();
+ const d = new Date(dn);
+ var t = '<br>' + makeTimeString(dn) + ' ' + d.toDateString() + '<br><br>';
+ t += 'Air Quality: ' + interpretAQI(data[AQI_position][j]) + '<br><br>';
+ for (var i=0; i<Ngraphs; i++) {
+  t += names[i] + ': ' + data[i][j].toFixed(decimalPlaces[i]) + ' ' 
+  + units.get(Array.from(units.keys())[i]) + '<br><br>';
+ }
+ document.getElementById('tdata').innerHTML = t;
+}
+
+// Do a GET request for all of the buffered data and generate the graphs
+function plotBufferedData() {
+ document.getElementById('error').innerHTML = '';
+ // Check whether plotly library could be loaded:
+ doPlot = !(typeof(Plotly) == 'undefined');
+ var xmlhttp = new XMLHttpRequest();
+ xmlhttp.onreadystatechange=function() {
+  if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+   const body = xmlhttp.response;
+   if (body.byteLength < 5) {
+    // The correct response should have at least 5 bytes
+    document.getElementById('error').innerHTML = errorString;
+    return;
+   }
+   // Read the time interval between new data
+   delay_ms = (new Uint16Array(body.slice(0, 2)))[0]*1000;
+   const codeByte = (new Uint8Array(body.slice(2, 3)))[0];
+   Ngraphs = units.size; // number of graphs to plot
+   if ((codeByte & 0x0F) == 0x00) {
+    // There is no particle sensor, so omit one graph
+    Ngraphs-=1;
+    includeParticles = false;
+   }
+   else if ((codeByte & 0x0F) == 0x01) {
+    // A PPD42 sensor is used: change the units (default is for SDS011) 
+    units.set('part','ppL');
+   }
+   if ((codeByte & 0x10) != 0) {
+    // Change temperature units to Fahrenheit (default is Celsius)
+    units.set('T','\u00B0F');
+   }
+   for (var i=0; i<Ngraphs; i++) {
+    var u = units.get(Array.from(units.keys())[i]);
+    if (u === '') {
+     titles.push(names[i]);
+    }
+    else {
+     titles.push(names[i] + ' / ' + u);
+    }
+   }
+   const buflen = (new Uint16Array(body.slice(3, 5)))[0];
+   // Check length of remaining data:
+   var expBytes = 5 + (Ngraphs*4*buflen);
+   if (expBytes != body.byteLength) {
+    document.getElementById('error').innerHTML = errorString;
+    return;
+   }
+   // Extract and decode data, starting at byte 5
+   const view = new DataView(body, 5);
+   var byteOffset = 0;
+   for (var i = 0; i < Ngraphs; i++) {
+    data.push([]);
+    for (var v = 0; v < buflen; v++) {
+     data[i].push(view.getFloat32(byteOffset, true));
+     byteOffset+=4;
+    }
+   }
+   // Create approximate time data for each point, based on current 
+   // time and known cycle delay time
+   var val = Date.now();
+   x_values = new Array(buflen);
+   for (var i=buflen; i>0; i--) {
+    x_values[i-1] = makeTimeDateString(val);
+    val = val - delay_ms;
+   }
+   
+   if (buflen > max_data_length) {
+    max_data_length = buflen;
+   }
+   // Create the plots, formatting appropriately for mobile or desktop
+   isMobile = isMobileDevice();
+   if (doPlot) {
+    var w_pc = isMobile ? 100 : 50;
+    var h_vh = isMobile ? 33.3 : 50;
+    var colTxt = "<div class='column' style='flex: " + w_pc.toString() + "%'>";
+    var mainTxt = colTxt;
+    for (var i=0; i<Ngraphs; i++) {
+     if ((!isMobile) && (i == Math.ceil(Ngraphs/2))) {
+      mainTxt += "</div>" + colTxt;
+     }
+     mainTxt += "<div style='height:" + h_vh.toString() + "vh'><div id='plot"
+       + i.toString() + "' style='height:90%'></div></div>";
+    }
+    mainTxt += "</div>";
+    document.getElementById('grid').innerHTML = mainTxt;
+
+    for (var i=0; i<Ngraphs; i++) {
+     plotGraph('plot' + i.toString(), i);
+    }
+   }
+   else {
+    // Plotly could not be loaded - show text data instead
+    showTextData();
+    document.getElementById('error').innerHTML = '<br>Graphs are not displayed because the Plotly.js library could not be loaded.<br>Connect to the internet, or cache the script for offline use.<br><br>';
+   }
+   // Schedule the data update so that the page will keep showing new data
+   setTimeout(getLatestData, delay_ms);
+  }
+ };
+ xmlhttp.open('GET','/1',true);
+ xmlhttp.responseType = 'arraybuffer';
+ xmlhttp.send();
+}
+
+// Do a GET request for just the last value of each variable, then plot it.
+// This function runs periodically, at the same interval as data are read 
+// on the MS430.
+// NOTE: if a 3 second cycle is used, most browsers will NOT call the function 
+// every 3 seconds unless the browser window is "in focus" (in view of the
+// user and selected). If the window is minimized or in a background tab,
+// the delay between function calls is often greater.
+function getLatestData() {
+ var xmlhttp = new XMLHttpRequest();
+ xmlhttp.onreadystatechange=function() {
+  if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+   const d = new Float32Array(xmlhttp.response);
+   // Only attempt data extraction if the data length is as expected:
+   if (d.length == Ngraphs) {
+    for (var i = 0; i < Ngraphs; i++) {
+     if (x_values.length == max_data_length) {
+      data[i].shift();
+     }
+     data[i].push(d[i]);
+    }
+
+    if (x_values.length == max_data_length) {
+     x_values.shift();
+    }
+    x_values.push(makeTimeDateString(Date.now()));
+    
+    if (doPlot) {
+     for (var i=0; i<Ngraphs; i++) {
+      plotGraph('plot' + i.toString(), i); 
+     }
+    }
+    else {
+     // Graphs are not being plotted because the Plotly library could not
+     // be loaded, so display data as text instead.
+     showTextData();
+    }
+   }
+   // Reschedule this function to run again after the cycle period time.
+   setTimeout(getLatestData, delay_ms);
+  }
+ };
+ xmlhttp.open('GET','/2',true);
+ xmlhttp.responseType = 'arraybuffer';
+ xmlhttp.send();
+}
+
+// Detect whether the browser is on a mobile device (tablet does not qualify)
+// If mobile, show graphs in a single column. Otherwise, use two columns.
+function isMobileDevice() {
+ let result = false;
+ (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4))) result = true;})(navigator.userAgent||navigator.vendor||window.opera);
+ return result;
+}
+
+// Make a "comma separated values" file containing all data and start the download. 
+// This file can be  opened with most spreadsheet software and text editors. 
+function makeCSVfile() {
+ var csvData = '"Time and Date"';
+ for (var i=0; i<Ngraphs; i++) {
+  csvData += ',"' + titles[i] + '"';
+ }
+ csvData += '\r\n';
+ for (var n=0; n<x_values.length; n++) {
+  csvData += '"' + x_values[n] + '"';
+  for (var i=0; i<Ngraphs; i++) {
+   csvData += ',"' + data[i][n].toFixed(decimalPlaces[i]) + '"';
+  }
+  csvData += '\r\n';
+ }
+ var f = document.getElementById('lnk');
+ URL.revokeObjectURL(f.href);
+ f.href = URL.createObjectURL(new Blob([csvData],{type:'text/csv;charset=utf-8;'}));
+ f.download='data.csv';
+ f.click();
+}
+</script>
+</body>
+</html>

@@ -15,7 +15,7 @@
 #  https://github.com/metriful/sensor
 
 import requests
-from sensor_functions import *
+from sensor_package.sensor_functions import *
 
 #########################################################
 # USER-EDITABLE SETTINGS
@@ -25,10 +25,8 @@ from sensor_functions import *
 # be set to 100 or 300 seconds, not 3 seconds.
 cycle_period = CYCLE_PERIOD_100_S
 
-# Which particle sensor, if any, is attached (PPD42, SDS011, or OFF)
-particleSensor = PARTICLE_SENSOR_OFF
-
 # IoT cloud settings.
+
 # This example uses the free IoT cloud hosting services provided 
 # by Tago.io or Thingspeak.com
 # Other free cloud providers are available.
@@ -37,8 +35,7 @@ particleSensor = PARTICLE_SENSOR_OFF
 # readme and User Guide for more information.
 
 # Choose which provider to use
-use_Tago_cloud = True 
-# To use the ThingSpeak cloud, set: use_Tago_cloud=False
+use_Tago_cloud = True   # set this False to use the Thingspeak cloud
 
 # The chosen account's key/token must be inserted below.  
 if (use_Tago_cloud):
@@ -55,8 +52,7 @@ else:
 (GPIO, I2C_bus) = SensorHardwareSetup()
 
 # Apply the chosen settings to the MS430
-if (particleSensor != PARTICLE_SENSOR_OFF):
-  I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [particleSensor])
+I2C_bus.write_i2c_block_data(i2c_7bit_address, PARTICLE_SENSOR_SELECT_REG, [PARTICLE_SENSOR])
 I2C_bus.write_i2c_block_data(i2c_7bit_address, CYCLE_TIME_PERIOD_REG, [cycle_period])
 
 #########################################################
@@ -85,38 +81,35 @@ while (True):
   # Now read all data from the MS430
 
   # Air data
-  raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, AIR_DATA_READ, AIR_DATA_BYTES)
-  air_data = extractAirData(raw_data)
+  # Choose output temperature unit (C or F) in sensor_functions.py
+  air_data = get_air_data(I2C_bus)
   
   # Air quality data
   # The initial self-calibration of the air quality data may take several
   # minutes to complete. During this time the accuracy parameter is zero 
   # and the data values are not valid.
-  raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, AIR_QUALITY_DATA_READ, AIR_QUALITY_DATA_BYTES)
-  air_quality_data = extractAirQualityData(raw_data)
+  air_quality_data = get_air_quality_data(I2C_bus)
     
   # Light data
-  raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, LIGHT_DATA_READ, LIGHT_DATA_BYTES)
-  light_data = extractLightData(raw_data)
-  
+  light_data = get_light_data(I2C_bus)
+
   # Sound data
-  raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, SOUND_DATA_READ, SOUND_DATA_BYTES)
-  sound_data = extractSoundData(raw_data)
+  sound_data = get_sound_data(I2C_bus)
     
   # Particle data
-  # This requires the connection of a particulate sensor (invalid 
+  # This requires the connection of a particulate sensor (zero/invalid 
   # values will be obtained if this sensor is not present).
+  # Specify your sensor model (PPD42 or SDS011) in sensor_functions.py
   # Also note that, due to the low pass filtering used, the 
   # particle data become valid after an initial initialization 
   # period of approximately one minute.
-  raw_data = I2C_bus.read_i2c_block_data(i2c_7bit_address, PARTICLE_DATA_READ, PARTICLE_DATA_BYTES)
-  particle_data = extractParticleData(raw_data, particleSensor)
+  particle_data = get_particle_data(I2C_bus, PARTICLE_SENSOR)
     
   # Assemble the data into the required format, then send it to the cloud
   # as an HTTP POST request.
   
   # For both example cloud providers, the following quantities will be sent:
-  # 1 Temperature/C
+  # 1 Temperature (measurement unit is selected in sensor_functions.py)
   # 2 Pressure/Pa
   # 3 Humidity/%
   # 4 Air quality index
@@ -125,14 +118,14 @@ while (True):
   # 7 Illuminance/lux
   # 8 Particle concentration
   
-  # Additionally, for Tago, the following is sent:
+  # Additionally, for Tago, the following are sent:
   # 9  Air Quality Assessment summary (Good, Bad, etc.) 
   # 10 Peak sound amplitude / mPa 
   
   try:
     if use_Tago_cloud:
       payload = [0]*10;
-      payload[0] = {"variable":"temperature","value":"{:.1f}".format(air_data['T_C'])}
+      payload[0] = {"variable":"temperature","value":"{:.1f}".format(air_data['T'])}
       payload[1] = {"variable":"pressure","value":air_data['P_Pa']}
       payload[2] = {"variable":"humidity","value":"{:.1f}".format(air_data['H_pc'])}
       payload[3] = {"variable":"aqi","value":"{:.1f}".format(air_quality_data['AQI'])}
@@ -146,7 +139,7 @@ while (True):
     else:
       # Use ThingSpeak.com cloud
       payload = "api_key=" + THINGSPEAK_API_KEY_STRING 
-      payload += "&field1=" + "{:.1f}".format(air_data['T_C'])
+      payload += "&field1=" + "{:.1f}".format(air_data['T'])
       payload += "&field2=" + str(air_data['P_Pa'])
       payload += "&field3=" + "{:.1f}".format(air_data['H_pc'])
       payload += "&field4=" + "{:.1f}".format(air_quality_data['AQI'])
@@ -156,12 +149,12 @@ while (True):
       payload += "&field8=" + "{:.2f}".format(particle_data['concentration'])
       requests.post(thingspeak_url, data=payload, headers=thingspeak_header, timeout=2)
       
-  except:
+  except Exception as e:
     # An error has occurred, likely due to a lost internet connection, 
     # and the post has failed.
     # The program will retry with the next data release and will succeed 
     # if the internet reconnects.
-    print("HTTP POST failed.")
-
-
+    print("HTTP POST failed with the following error:")
+    print(repr(e))
+    print("The program will continue and retry on the next data output.")
 

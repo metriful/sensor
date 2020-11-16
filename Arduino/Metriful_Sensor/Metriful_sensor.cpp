@@ -13,13 +13,6 @@
 #include "Metriful_sensor.h"
 #include "host_pin_definitions.h"
 
-#ifdef ARDUINO_SAMD_NANO_33_IOT
-  // The Arduino Nano 33 IoT wifi module prevents the use of the 
-  // built-in hardware-supported I2C module, so a software I2C library
-  // must be used instead. SlowSoftWire is one of several libraries available.
-  SlowSoftWire TheWire(SOFT_SDA, SOFT_SCL, false);
-#endif
-
 // The Arduino Wire library has a limited internal buffer size:
 #define ARDUINO_WIRE_BUFFER_LIMIT_BYTES 32
 
@@ -29,14 +22,15 @@ void SensorHardwareSetup(uint8_t i2c_7bit_address) {
 
   #ifdef ESP8266
     // Must specify the I2C pins
-    TheWire.begin(SDA_PIN, SCL_PIN); 
+    Wire.begin(SDA_PIN, SCL_PIN); 
     digitalWrite(LED_BUILTIN, HIGH);
   #else
-    TheWire.begin(); 
+    // Default I2C pins are used
+    Wire.begin(); 
     digitalWrite(LED_BUILTIN, LOW);
   #endif
   
-  TheWire.setClock(I2C_CLK_FREQ_HZ);
+  Wire.setClock(I2C_CLK_FREQ_HZ);
 
   // READY, light interrupt and sound interrupt lines are digital inputs.
   pinMode(READY_PIN, INPUT);
@@ -71,15 +65,9 @@ volatile bool ready_assertion_event = false;
 
 // This function is automatically called after a falling edge (assertion) of READY.
 // The flag variable is set true - it must be set false again in the main program.
-#ifdef ESP8266
-void ICACHE_RAM_ATTR ready_ISR(void) {
+void ISR_ATTRIBUTE ready_ISR(void) {
   ready_assertion_event = true;
 }
-#else
-void ready_ISR(void) {
-  ready_assertion_event = true;
-}
-#endif
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -88,17 +76,9 @@ void ready_ISR(void) {
 // power resources, so may not always be appropriate.
 
 void convertAirDataF(const AirData_t * airData_in, AirData_F_t * airDataF_out) {
-  // Decode the signed value for T
-  float absoluteValue = ((float) (airData_in->T_C_int_with_sign & TEMPERATURE_VALUE_MASK)) + 
-                       (((float) airData_in->T_C_fr_1dp)/10.0);
-  if ((airData_in->T_C_int_with_sign & TEMPERATURE_SIGN_MASK) != 0) {
-    // the most-significant bit is set, indicating that the temperature is negative
-    airDataF_out->T_C = -absoluteValue;
-  }
-  else {
-    // temperature is positive
-    airDataF_out->T_C = absoluteValue;
-  }
+  // Decode the signed value for T (in Celsius)
+  airDataF_out->T_C = convertEncodedTemperatureToFloat(airData_in->T_C_int_with_sign,
+                                                       airData_in->T_C_fr_1dp);
   airDataF_out->P_Pa = airData_in->P_Pa;
   airDataF_out->H_pc = ((float) airData_in->H_pc_int) + (((float) airData_in->H_pc_fr_1dp)/10.0);
   airDataF_out->G_Ohm = airData_in->G_ohm;
@@ -143,21 +123,32 @@ void convertParticleDataF(const ParticleData_t * particleData_in, ParticleData_F
 
 ////////////////////////////////////////////////////////////////////////
 
-// The following five functions print data (in floating-point representation) over the serial port as text
+// The following five functions print data (in floating-point 
+// representation) over the serial port as text
 
 void printAirDataF(const AirData_F_t * airDataF) {
-  Serial.print("Temperature = ");Serial.print(airDataF->T_C,2);Serial.println(" C");
+  Serial.print("Temperature = ");
+  #ifdef USE_FAHRENHEIT
+    float temperature_F = convertCtoF(airDataF->T_C);
+    Serial.print(temperature_F,1);Serial.println(" " FAHRENHEIT_SYMBOL);
+  #else
+    Serial.print(airDataF->T_C,1);Serial.println(" " CELSIUS_SYMBOL);
+  #endif
   Serial.print("Pressure = ");Serial.print(airDataF->P_Pa);Serial.println(" Pa");
-  Serial.print("Humidity = ");Serial.print(airDataF->H_pc,2);Serial.println(" %");
-  Serial.print("Gas Sensor Resistance = ");Serial.print(airDataF->G_Ohm);Serial.println(" ohms");
+  Serial.print("Humidity = ");Serial.print(airDataF->H_pc,1);Serial.println(" %");
+  Serial.print("Gas Sensor Resistance = ");Serial.print(airDataF->G_Ohm);Serial.println(" " OHM_SYMBOL);
 }
 
 void printAirQualityDataF(const AirQualityData_F_t * airQualityDataF) {
   if (airQualityDataF->AQI_accuracy > 0) {
-    Serial.print("Air Quality Index = ");Serial.print(airQualityDataF->AQI,2);
-    Serial.print(" (");Serial.print(interpret_AQI_value((uint16_t) airQualityDataF->AQI));Serial.println(")");
-    Serial.print("Estimated CO2 = ");Serial.print(airQualityDataF->CO2e,2);Serial.println(" ppm");
-    Serial.print("Equivalent Breath VOC = ");Serial.print(airQualityDataF->bVOC,2);Serial.println(" ppm");
+    Serial.print("Air Quality Index = ");Serial.print(airQualityDataF->AQI,1);
+    Serial.print(" (");
+    Serial.print(interpret_AQI_value((uint16_t) airQualityDataF->AQI));
+    Serial.println(")");
+    Serial.print("Estimated CO" SUBSCRIPT_2 " = ");Serial.print(airQualityDataF->CO2e,1);
+    Serial.println(" ppm");
+    Serial.print("Equivalent Breath VOC = ");Serial.print(airQualityDataF->bVOC,2);
+    Serial.println(" ppm");
   }
   Serial.print("Air Quality Accuracy: ");
   Serial.println(interpret_AQI_accuracy(airQualityDataF->AQI_accuracy));
@@ -173,22 +164,22 @@ void printSoundDataF(const SoundData_F_t * soundDataF) {
   Serial.print("A-weighted Sound Pressure Level = ");
   Serial.print(soundDataF->SPL_dBA,1);Serial.println(" dBA");
   for (uint16_t i=0; i<SOUND_FREQ_BANDS; i++) {
-    sprintf(strbuf,"Frequency Band %i (%i Hz) SPL = ", i+1, sound_band_mids_Hz[i]);
+    sprintf(strbuf,"Frequency Band %u (%u Hz) SPL = ", i+1, sound_band_mids_Hz[i]);
     Serial.print(strbuf);
     Serial.print(soundDataF->SPL_bands_dB[i],1);Serial.println(" dB");
   }
   Serial.print("Peak Sound Amplitude = ");Serial.print(soundDataF->peakAmp_mPa,2);Serial.println(" mPa");
 }
 
-void printParticleDataF(const ParticleData_F_t * particleDataF, ParticleSensor_t particleSensor) {
+void printParticleDataF(const ParticleData_F_t * particleDataF, uint8_t particleSensor) {
   Serial.print("Particle Duty Cycle = ");Serial.print(particleDataF->duty_cycle_pc,2);Serial.println(" %");
   Serial.print("Particle Concentration = ");
   Serial.print(particleDataF->concentration,2);
-  if (particleSensor == PPD42) {
+  if (particleSensor == PARTICLE_SENSOR_PPD42) {
     Serial.println(" ppL");
   }
-  else if (particleSensor == SDS011) {
-    Serial.println(" ug/m3");
+  else if (particleSensor == PARTICLE_SENSOR_SDS011) {
+    Serial.println(" " SDS011_UNIT_SYMBOL);
   }
   else {
     Serial.println(" (?)");
@@ -211,35 +202,25 @@ void printParticleDataF(const ParticleData_F_t * particleDataF, ParticleSensor_t
 
 void printAirData(const AirData_t * airData, bool printColumns) {
   char strbuf[50] = {0};
+  
+  uint8_t T_intPart = 0;
+  uint8_t T_fractionalPart = 0;
+  bool isPositive = true;
+  const char * T_unit = getTemperature(airData, &T_intPart, &T_fractionalPart, &isPositive);
+  
   if (printColumns) {
-    // Print: temperature/C, pressure/Pa, humidity/%, gas sensor resistance/ohm 
-    uint8_t temp = airData->T_C_int_with_sign & TEMPERATURE_VALUE_MASK;
-    if ((airData->T_C_int_with_sign & TEMPERATURE_SIGN_MASK) != 0) {
-      // the most-significant bit is set, indicating that the temperature is negative
-      sprintf(strbuf,"-%u.%u ",temp,airData->T_C_fr_1dp);
-    }
-    else {
-      sprintf(strbuf,"%u.%u ",temp,airData->T_C_fr_1dp);
-    }
-    Serial.print(strbuf);
-    sprintf(strbuf,"%lu %u.%u %lu ",airData->P_Pa, airData->H_pc_int, airData->H_pc_fr_1dp, airData->G_ohm);
+    // Print: temperature, pressure/Pa, humidity/%, gas sensor resistance/ohm 
+    sprintf(strbuf,"%s%u.%u %" PRIu32 " %u.%u %" PRIu32 " ",isPositive?"":"-", T_intPart, T_fractionalPart,
+            airData->P_Pa, airData->H_pc_int, airData->H_pc_fr_1dp, airData->G_ohm);
     Serial.print(strbuf);
   }
   else {
-    uint8_t temp = airData->T_C_int_with_sign & TEMPERATURE_VALUE_MASK;
-    if ((airData->T_C_int_with_sign & TEMPERATURE_SIGN_MASK) != 0) {
-      // the most-significant bit is set, indicating that the temperature is negative
-      sprintf(strbuf,"Temperature = -%u.%u C",temp,airData->T_C_fr_1dp);
-    }
-    else {
-      // temperature is positive
-      sprintf(strbuf,"Temperature = %u.%u C",temp,airData->T_C_fr_1dp);
-    }
+    sprintf(strbuf,"Temperature = %s%u.%u %s", isPositive?"":"-", T_intPart, T_fractionalPart, T_unit);
     Serial.println(strbuf);
     Serial.print("Pressure = ");Serial.print(airData->P_Pa);Serial.println(" Pa");
     sprintf(strbuf,"Humidity = %u.%u %%",airData->H_pc_int,airData->H_pc_fr_1dp);
     Serial.println(strbuf);
-    Serial.print("Gas Sensor Resistance = ");Serial.print(airData->G_ohm);Serial.println(" ohm");
+    Serial.print("Gas Sensor Resistance = ");Serial.print(airData->G_ohm);Serial.println(" " OHM_SYMBOL);
   }
 }
 
@@ -255,9 +236,10 @@ void printAirQualityData(const AirQualityData_t * airQualityData, bool printColu
   else {
     if (airQualityData->AQI_accuracy > 0) {
       sprintf(strbuf,"Air Quality Index = %u.%u (%s)",
-          airQualityData->AQI_int, airQualityData->AQI_fr_1dp, interpret_AQI_value(airQualityData->AQI_int));
+         airQualityData->AQI_int, airQualityData->AQI_fr_1dp, interpret_AQI_value(airQualityData->AQI_int));
       Serial.println(strbuf);
-      sprintf(strbuf,"Estimated CO2 = %u.%u ppm",airQualityData->CO2e_int, airQualityData->CO2e_fr_1dp);
+      sprintf(strbuf,"Estimated CO" SUBSCRIPT_2 " = %u.%u ppm",
+                     airQualityData->CO2e_int, airQualityData->CO2e_fr_1dp);
       Serial.println(strbuf);
       sprintf(strbuf,"Equivalent Breath VOC = %u.%02u ppm",
                      airQualityData->bVOC_int, airQualityData->bVOC_fr_2dp);
@@ -288,8 +270,8 @@ void printSoundData(const SoundData_t * soundData, bool printColumns) {
                    soundData->SPL_dBA_int, soundData->SPL_dBA_fr_1dp);
     Serial.println(strbuf);
     for (uint8_t i=0; i<SOUND_FREQ_BANDS; i++) {
-      sprintf(strbuf,"Frequency Band %i (%i Hz) SPL = %u.%u dB", 
-            i+1, sound_band_mids_Hz[i], soundData->SPL_bands_dB_int[i], soundData->SPL_bands_dB_fr_1dp[i]);
+      sprintf(strbuf,"Frequency Band %u (%u Hz) SPL = %u.%u dB", 
+          i+1, sound_band_mids_Hz[i], soundData->SPL_bands_dB_int[i], soundData->SPL_bands_dB_fr_1dp[i]);
       Serial.println(strbuf);
     }
     sprintf(strbuf,"Peak Sound Amplitude = %u.%02u mPa", 
@@ -312,8 +294,7 @@ void printLightData(const LightData_t * lightData, bool printColumns) {
   }
 }
 
-void printParticleData(const ParticleData_t * particleData, bool printColumns, 
-                       ParticleSensor_t particleSensor) {
+void printParticleData(const ParticleData_t * particleData, bool printColumns, uint8_t particleSensor) {
   char strbuf[50] = {0};
   if (printColumns) {
     // Print: duty cycle/%, concentration
@@ -329,14 +310,14 @@ void printParticleData(const ParticleData_t * particleData, bool printColumns,
     sprintf(strbuf,"Particle Concentration = %u.%02u ", 
                    particleData->concentration_int, particleData->concentration_fr_2dp);
     Serial.print(strbuf);
-    if (particleSensor == PPD42) {
-      Serial.println(" ppL");
+    if (particleSensor == PARTICLE_SENSOR_PPD42) {
+      Serial.println("ppL");
     }
-    else if (particleSensor == SDS011) {
-      Serial.println(" ug/m3");
+    else if (particleSensor == PARTICLE_SENSOR_SDS011) {
+      Serial.println(SDS011_UNIT_SYMBOL);
     }
     else {
-      Serial.println(" (?)");
+      Serial.println("(?)");
     }
     Serial.print("Particle data valid: ");
     if (particleData->valid == 0) {
@@ -366,16 +347,16 @@ bool TransmitI2C(uint8_t dev_addr_7bit, uint8_t commandRegister, uint8_t data[],
     return false;
   }
 
-  TheWire.beginTransmission(dev_addr_7bit);
-  uint8_t bytesWritten = TheWire.write(commandRegister);
+  Wire.beginTransmission(dev_addr_7bit);
+  uint8_t bytesWritten = Wire.write(commandRegister);
   if (data_length > 0) {
-    bytesWritten += TheWire.write(data, data_length); 
+    bytesWritten += Wire.write(data, data_length); 
   }
   if (bytesWritten != (data_length+1)) {
     return false;
   }
 
-  return (TheWire.endTransmission(true) == 0);
+  return (Wire.endTransmission(true) == 0);
 }
 
 // Read data from the Metriful MS430 using the I2C-compatible two wire interface.
@@ -386,33 +367,33 @@ bool TransmitI2C(uint8_t dev_addr_7bit, uint8_t commandRegister, uint8_t data[],
 // commandRegister = the settings register code or data location code to be used.
 // data = array to store the received data; its length must be at least "data_length" bytes.
 // data_length = the number of bytes to read. 
-// 
+//
 bool ReceiveI2C(uint8_t dev_addr_7bit, uint8_t commandRegister, uint8_t data[], uint8_t data_length) {
 
   if (data_length == 0) {
     // Cannot do a zero byte read
     return false;
   }
-  
+
   if (data_length > ARDUINO_WIRE_BUFFER_LIMIT_BYTES) {
     // The Arduino Wire library has a limited internal buffer size
     return false;
   }
 
-  TheWire.beginTransmission(dev_addr_7bit);   
-  TheWire.write(commandRegister);  
-  if (TheWire.endTransmission(false) != 0) {
+  Wire.beginTransmission(dev_addr_7bit);   
+  Wire.write(commandRegister);  
+  if (Wire.endTransmission(false) != 0) {
     return false;
-  }         
+  }
 
-  if (TheWire.requestFrom(dev_addr_7bit, data_length, (uint8_t) 1) != data_length) {
+  if (Wire.requestFrom(dev_addr_7bit, data_length, (uint8_t) 1) != data_length) {
     // Did not receive the expected number of bytes
     return false;
   }
 
   for (uint8_t i=0; i<data_length; i++) {
-    if (TheWire.available() > 0) {
-      data[i] = TheWire.read();
+    if (Wire.available() > 0) {
+      data[i] = Wire.read();
     }
   }
 
@@ -427,13 +408,13 @@ const char * interpret_AQI_accuracy(uint8_t AQI_accuracy_code) {
   switch (AQI_accuracy_code) {
     default:
     case 0:
-      return "Not Yet Valid, Self-calibration Incomplete";
+      return "Not yet valid, self-calibration incomplete";
     case 1:
-      return "Low Accuracy, Self-calibration Ongoing";
+      return "Low accuracy, self-calibration ongoing";
     case 2:
-      return "Medium Accuracy, Self-calibration Ongoing";
+      return "Medium accuracy, self-calibration ongoing";
     case 3:
-      return "High Accuracy";
+      return "High accuracy";
   }
 }
 
@@ -455,7 +436,7 @@ const char * interpret_AQI_value(uint16_t AQI) {
     return "Bad";
   }
   else {
-    return "Very Bad";
+    return "Very bad";
   }
 }
 
@@ -485,4 +466,132 @@ bool setLightInterruptThreshold(uint8_t dev_addr_7bit, uint16_t thres_lux_int, u
   TXdata[1] = (uint8_t) (thres_lux_int >> 8);
   TXdata[2] = thres_lux_fr_2dp;
   return TransmitI2C(dev_addr_7bit, LIGHT_INTERRUPT_THRESHOLD_REG, TXdata, LIGHT_INTERRUPT_THRESHOLD_BYTES);
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// Convenience functions for reading data (integer representation)
+//
+// For each category of data (air, sound, etc.) a pointer to the data 
+// struct is passed to the ReceiveI2C() function. The received byte 
+// sequence fills the data struct in the correct order so that each 
+// field within the struct receives the value of an environmental data
+// quantity (temperature, sound level, etc.) 
+
+SoundData_t getSoundData(uint8_t i2c_7bit_address) {
+  SoundData_t soundData = {0};
+  ReceiveI2C(i2c_7bit_address, SOUND_DATA_READ, (uint8_t *) &soundData, SOUND_DATA_BYTES);
+  return soundData;
+}
+
+AirData_t getAirData(uint8_t i2c_7bit_address) {
+  AirData_t airData = {0};
+  ReceiveI2C(i2c_7bit_address, AIR_DATA_READ, (uint8_t *) &airData, AIR_DATA_BYTES);
+  return airData;
+}
+
+LightData_t getLightData(uint8_t i2c_7bit_address) {
+  LightData_t lightData = {0};
+  ReceiveI2C(i2c_7bit_address, LIGHT_DATA_READ, (uint8_t *) &lightData, LIGHT_DATA_BYTES);
+  return lightData;
+}
+
+AirQualityData_t getAirQualityData(uint8_t i2c_7bit_address) {
+  AirQualityData_t airQualityData = {0};
+  ReceiveI2C(i2c_7bit_address, AIR_QUALITY_DATA_READ, (uint8_t *) &airQualityData, AIR_QUALITY_DATA_BYTES);
+  return airQualityData;
+}
+
+ParticleData_t getParticleData(uint8_t i2c_7bit_address) {
+  ParticleData_t particleData = {0};
+  ReceiveI2C(i2c_7bit_address, PARTICLE_DATA_READ, (uint8_t *) &particleData, PARTICLE_DATA_BYTES);
+  return particleData;
+}
+
+// Convenience functions for reading data (float representation)
+
+SoundData_F_t getSoundDataF(uint8_t i2c_7bit_address) {
+  SoundData_F_t soundDataF = {0};
+  SoundData_t soundData = getSoundData(i2c_7bit_address);
+  convertSoundDataF(&soundData, &soundDataF);
+  return soundDataF;
+}
+
+AirData_F_t getAirDataF(uint8_t i2c_7bit_address) {
+  AirData_F_t airDataF = {0};
+  AirData_t airData = getAirData(i2c_7bit_address);
+  convertAirDataF(&airData, &airDataF);
+  return airDataF;
+}
+
+LightData_F_t getLightDataF(uint8_t i2c_7bit_address) {
+  LightData_F_t lightDataF = {0};
+  LightData_t lightData = getLightData(i2c_7bit_address);
+  convertLightDataF(&lightData, &lightDataF);
+  return lightDataF;
+}
+
+AirQualityData_F_t getAirQualityDataF(uint8_t i2c_7bit_address) {
+  AirQualityData_F_t airQualityDataF = {0};
+  AirQualityData_t airQualityData = getAirQualityData(i2c_7bit_address);
+  convertAirQualityDataF(&airQualityData, &airQualityDataF);
+  return airQualityDataF;
+}
+
+ParticleData_F_t getParticleDataF(uint8_t i2c_7bit_address) {
+  ParticleData_F_t particleDataF = {0};
+  ParticleData_t particleData = getParticleData(i2c_7bit_address);
+  convertParticleDataF(&particleData, &particleDataF);
+  return particleDataF;
+}
+
+////////////////////////////////////////////////////////////////////////
+
+// Functions to convert Celsius temperature to Fahrenheit, in float 
+// and integer formats
+
+float convertCtoF(float C) {
+  return ((C*1.8) + 32.0);
+}
+
+// Convert Celsius to Fahrenheit in sign, integer and fractional parts
+void convertCtoF_int(float C, uint8_t * F_int, uint8_t * F_fr_1dp, bool * isPositive) {
+  float F = convertCtoF(C);
+  bool isNegative = (F < 0.0);
+  if (isNegative) {
+    F = -F;
+  }
+  F += 0.05;
+  F_int[0] = (uint8_t) F;
+  F -= (float) F_int[0];
+  F_fr_1dp[0] = (uint8_t) (F*10.0);
+  isPositive[0] = (!isNegative);
+}
+
+// Decode and convert the temperature as read from the MS430 (integer 
+// representation) into a float value 
+float convertEncodedTemperatureToFloat(uint8_t T_C_int_with_sign, uint8_t T_C_fr_1dp) {
+  float temperature_C = ((float) (T_C_int_with_sign & TEMPERATURE_VALUE_MASK)) + 
+                       (((float) T_C_fr_1dp)/10.0);
+  if ((T_C_int_with_sign & TEMPERATURE_SIGN_MASK) != 0) {
+    // the most-significant bit is set, indicating that the temperature is negative
+    temperature_C = -temperature_C;
+  }
+  return temperature_C;
+}
+
+// Obtain temperature, in chosen units (C or F), as sign, integer and fractional parts
+const char * getTemperature(const AirData_t * pAirData, uint8_t * T_intPart, 
+                    uint8_t * T_fractionalPart, bool * isPositive) {
+  #ifdef USE_FAHRENHEIT
+    float temperature_C = convertEncodedTemperatureToFloat(pAirData->T_C_int_with_sign, 
+                                                           pAirData->T_C_fr_1dp);
+    convertCtoF_int(temperature_C, T_intPart, T_fractionalPart, isPositive);
+    return FAHRENHEIT_SYMBOL;
+  #else
+    isPositive[0] = ((pAirData->T_C_int_with_sign & TEMPERATURE_SIGN_MASK) == 0);
+    T_intPart[0] = pAirData->T_C_int_with_sign & TEMPERATURE_VALUE_MASK;
+    T_fractionalPart[0] = pAirData->T_C_fr_1dp;
+    return CELSIUS_SYMBOL;
+  #endif
 }
