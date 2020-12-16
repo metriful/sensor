@@ -17,17 +17,23 @@
 #define ARDUINO_WIRE_BUFFER_LIMIT_BYTES 32
 
 void SensorHardwareSetup(uint8_t i2c_7bit_address) {
-
-  pinMode(LED_BUILTIN, OUTPUT);
+   
+  #ifdef LED_BUILTIN
+   pinMode(LED_BUILTIN, OUTPUT);
+  #endif
 
   #ifdef ESP8266
     // Must specify the I2C pins
-    Wire.begin(SDA_PIN, SCL_PIN); 
-    digitalWrite(LED_BUILTIN, HIGH);
+    Wire.begin(SDA_PIN, SCL_PIN);
+    #ifdef LED_BUILTIN
+      digitalWrite(LED_BUILTIN, HIGH);
+    #endif
   #else
     // Default I2C pins are used
-    Wire.begin(); 
-    digitalWrite(LED_BUILTIN, LOW);
+    Wire.begin();
+    #ifdef LED_BUILTIN
+      digitalWrite(LED_BUILTIN, LOW);
+    #endif
   #endif
   
   Wire.setClock(I2C_CLK_FREQ_HZ);
