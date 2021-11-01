@@ -117,6 +117,7 @@ typedef struct {
 // Struct used in the Home Assistant example
 typedef struct {
   const char * name;
+  const char * device_class;
   const char * unit;
   const char * icon;
   uint8_t decimalPlaces;

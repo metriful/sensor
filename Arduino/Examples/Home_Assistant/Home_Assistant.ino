@@ -62,7 +62,7 @@ char password[] = "PUT WIFI PASSWORD HERE IN QUOTES"; // network password
 WiFiClient client;
 
 // Buffers for assembling http POST requests
-char postBuffer[450] = {0};
+char postBuffer[512] = {0};
 char fieldBuffer[70] = {0};
 
 // Structs for data
@@ -77,23 +77,23 @@ SoundData_t soundData = {0};
 // dashboard in Home Assistant. The icons can be chosen from 
 // https://cdn.materialdesignicons.com/5.3.45/    
 // (remove the "mdi-" part from the icon name).
-// The attribute fields are: {name, unit, icon, decimal places}
-HA_Attributes_t pressure = {"Pressure","Pa","weather-cloudy",0};
-HA_Attributes_t humidity = {"Humidity","%","water-percent",1};
-HA_Attributes_t illuminance = {"Illuminance","lx","white-balance-sunny",2};
-HA_Attributes_t soundLevel = {"Sound level","dBA","microphone",1};
-HA_Attributes_t peakAmplitude = {"Sound peak","mPa","waveform",2};
-HA_Attributes_t AQI = {"Air Quality Index"," ","thought-bubble-outline",1};
-HA_Attributes_t AQ_assessment = {"Air quality assessment","","flower-tulip",0};
+// The attribute fields are: {name, device_class, unit, icon, decimal places}
+HA_Attributes_t pressure =       {"Pressure", "pressure", "hPa", "weather-cloudy", 1};
+HA_Attributes_t humidity =       {"Humidity", "humidity", "%", "water-percent", 1};
+HA_Attributes_t illuminance =    {"Illuminance", "illuminance", "lx", "white-balance-sunny", 2};
+HA_Attributes_t soundLevel =     {"Sound level", "None", "dBA", "microphone", 1};
+HA_Attributes_t peakAmplitude =  {"Sound peak", "None", "mPa", "waveform", 2};
+HA_Attributes_t AQI =            {"Air Quality Index", "aqi", "", "thought-bubble-outline", 1};
+HA_Attributes_t AQ_assessment =  {"Air quality assessment", "None", "", "flower-tulip", 0};
 #if (PARTICLE_SENSOR == PARTICLE_SENSOR_PPD42)
-  HA_Attributes_t particulates = {"Particle concentration","ppL","chart-bubble",0};
+  HA_Attributes_t particulates = {"Particle concentration", "pm10", "ppL", "chart-bubble", 0};
 #else
-  HA_Attributes_t particulates = {"Particle concentration",SDS011_UNIT_SYMBOL,"chart-bubble",2};
+  HA_Attributes_t particulates = {"Particle concentration", "pm25", SDS011_UNIT_SYMBOL, "chart-bubble", 2};
 #endif
 #ifdef USE_FAHRENHEIT
-  HA_Attributes_t temperature = {"Temperature",FAHRENHEIT_SYMBOL,"thermometer",1};
+  HA_Attributes_t temperature =  {"Temperature", "temperature", FAHRENHEIT_SYMBOL, "thermometer", 1};
 #else
-  HA_Attributes_t temperature = {"Temperature",CELSIUS_SYMBOL,"thermometer",1};
+  HA_Attributes_t temperature =  {"Temperature", "temperature", CELSIUS_SYMBOL, "thermometer", 1};
 #endif
 
 
@@ -144,7 +144,7 @@ void loop() {
   
   // Send data to Home Assistant
   sendNumericData(&temperature, (uint32_t) T_intPart, T_fractionalPart, isPositive);
-  sendNumericData(&pressure, (uint32_t) airData.P_Pa, 0, true);
+  sendNumericData(&pressure, (uint32_t) roundf(airData.P_Pa / 100.0), 0, true);
   sendNumericData(&humidity, (uint32_t) airData.H_pc_int, airData.H_pc_fr_1dp, true);
   sendNumericData(&illuminance, (uint32_t) lightData.illum_lux_int, lightData.illum_lux_fr_2dp, true);
   sendNumericData(&soundLevel, (uint32_t) soundData.SPL_dBA_int, soundData.SPL_dBA_fr_1dp, true);
@@ -206,12 +206,13 @@ void http_POST_Home_Assistant(const HA_Attributes_t * attributes, const char * v
     // Assemble the JSON content string:
     sprintf(postBuffer, "{\"state\":%s,\"attributes\":{"
                           "\"unique_id\":\"" SENSOR_NAME "\","
+                          "\"device_class\":\"%s\","
                           "\"unit_of_measurement\":\"%s\","
                           "\"friendly_name\":\"%s\","
                           "\"icon\":\"mdi:%s\"}"
                         "}",
                        valueText,
-                       attributes->unit, attributes->name, attributes->icon);
+                       attributes->device_class, attributes->unit, attributes->name, attributes->icon);
     
     sprintf(fieldBuffer,"Content-Length: %u", strlen(postBuffer));  
     client.println(fieldBuffer);
