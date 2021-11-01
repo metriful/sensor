@@ -204,9 +204,14 @@ void http_POST_Home_Assistant(const HA_Attributes_t * attributes, const char * v
     client.println("Authorization: Bearer " LONG_LIVED_ACCESS_TOKEN);
     
     // Assemble the JSON content string:
-    sprintf(postBuffer,"{\"state\":%s,\"attributes\":{\"unit_of_measurement\""
-                       ":\"%s\",\"friendly_name\":\"%s\",\"icon\":\"mdi:%s\"}}",
-                       valueText, attributes->unit, attributes->name, attributes->icon);
+    sprintf(postBuffer, "{\"state\":%s,\"attributes\":{"
+                          "\"unique_id\":\"" SENSOR_NAME "\","
+                          "\"unit_of_measurement\":\"%s\","
+                          "\"friendly_name\":\"%s\","
+                          "\"icon\":\"mdi:%s\"}"
+                        "}",
+                       valueText,
+                       attributes->unit, attributes->name, attributes->icon);
     
     sprintf(fieldBuffer,"Content-Length: %u", strlen(postBuffer));  
     client.println(fieldBuffer);
