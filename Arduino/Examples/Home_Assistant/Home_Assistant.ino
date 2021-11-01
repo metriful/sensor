@@ -196,7 +196,8 @@ void http_POST_Home_Assistant(const HA_Attributes_t * attributes, const char * v
         fieldBuffer[i] = '_';
       }
     }
-    sprintf(postBuffer,"POST /api/states/" SENSOR_NAME ".%s HTTP/1.1", fieldBuffer);
+    // See https://developers.home-assistant.io/docs/api/rest#actions
+    sprintf(postBuffer,"POST /api/states/sensor." SENSOR_NAME "_%s HTTP/1.1", fieldBuffer);
     client.println(postBuffer);
     client.println("Host: " HOME_ASSISTANT_IP ":8123");
     client.println("Content-Type: application/json");
