@@ -1,23 +1,23 @@
 /* 
    particle_sensor_toggle.ino
 
-   Optional advanced demo. This program shows how to generate an output 
-   control signal from one of the host's pins, which can be used to turn 
+   Optional advanced demo. This program shows how to generate an output
+   control signal from one of the host's pins, which can be used to turn
    the particle sensor on and off. An external transistor circuit is
-   also needed - this will gate the sensor power supply according to 
+   also needed - this will gate the sensor power supply according to
    the control signal. Further details are given in the User Guide.
-   
+
    The program continually measures and displays all environment data
-   in a repeating cycle. The user can view the output in the Serial 
-   Monitor. After reading the data, the particle sensor is powered off 
-   for a chosen number of cycles ("off_cycles"). It is then powered on 
-   and read before being powered off again. Sound data are ignored 
+   in a repeating cycle. The user can view the output in the Serial
+   Monitor. After reading the data, the particle sensor is powered off
+   for a chosen number of cycles ("off_cycles"). It is then powered on
+   and read before being powered off again. Sound data are ignored
    while the particle sensor is on, to avoid its fan noise.
 
-   Copyright 2020 Metriful Ltd. 
+   Copyright 2020-2023 Metriful Ltd.
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit 
+   For code examples, datasheet and user guide, visit
    https://github.com/metriful/sensor
 */
 
@@ -60,7 +60,8 @@ bool particleSensorIsOn = false;
 uint8_t particleSensor_count = 0;
 
 
-void setup() {  
+void setup()
+{  
   // Initialize the host pins, set up the serial port and reset:
   SensorHardwareSetup(I2C_ADDRESS); 
   
@@ -76,7 +77,8 @@ void setup() {
   TransmitI2C(I2C_ADDRESS, CYCLE_TIME_PERIOD_REG, transmit_buffer, 1);
 
   // Wait for the serial port to be ready, for displaying the output
-  while (!Serial) {
+  while (!Serial)
+  {
     yield();
   } 
 
@@ -86,9 +88,11 @@ void setup() {
 }
 
 
-void loop() {
+void loop()
+{
   // Wait for the next new data release, indicated by a falling edge on READY
-  while (!ready_assertion_event) {
+  while (!ready_assertion_event)
+  {
     yield();
   }
   ready_assertion_event = false;
@@ -108,13 +112,15 @@ void loop() {
   minutes to complete. During this time the accuracy parameter is zero 
   and the data values are not valid.
   */ 
-  ReceiveI2C(I2C_ADDRESS, AIR_QUALITY_DATA_READ, (uint8_t *) &airQualityData, AIR_QUALITY_DATA_BYTES);
+  ReceiveI2C(I2C_ADDRESS, AIR_QUALITY_DATA_READ, (uint8_t *) &airQualityData,
+             AIR_QUALITY_DATA_BYTES);
   
   // Light data
   ReceiveI2C(I2C_ADDRESS, LIGHT_DATA_READ, (uint8_t *) &lightData, LIGHT_DATA_BYTES);
   
   // Sound data - only read when particle sensor is off
-  if (!particleSensorIsOn) {
+  if (!particleSensorIsOn)
+  {
     ReceiveI2C(I2C_ADDRESS, SOUND_DATA_READ, (uint8_t *) &soundData, SOUND_DATA_BYTES);
   }
   
@@ -126,7 +132,8 @@ void loop() {
   particle data become valid after an initial initialization 
   period of approximately one minute.
   */ 
-  if (particleSensorIsOn) {
+  if (particleSensorIsOn)
+  {
     ReceiveI2C(I2C_ADDRESS, PARTICLE_DATA_READ, (uint8_t *) &particleData, PARTICLE_DATA_BYTES);
   }
 
@@ -140,7 +147,8 @@ void loop() {
   Serial.println();
   
   // Turn the particle sensor on/off if required 
-  if (particleSensorIsOn) {
+  if (particleSensorIsOn)
+  {
     // Stop the particle detection on the MS430
     transmit_buffer[0] = OFF;
     TransmitI2C(I2C_ADDRESS, PARTICLE_SENSOR_SELECT_REG, transmit_buffer, 1);
@@ -149,9 +157,11 @@ void loop() {
     digitalWrite(particle_sensor_control_pin, !particle_sensor_ON_state);
     particleSensorIsOn = false;
   }
-  else {
+  else
+  {
     particleSensor_count++;
-    if (particleSensor_count >= off_cycles) {
+    if (particleSensor_count >= off_cycles)
+    {
       // Turn on the hardware:
       digitalWrite(particle_sensor_control_pin, particle_sensor_ON_state);
       

@@ -4,17 +4,15 @@
 
 <p align="center"><img src="pictures/group.png?raw=true"/></p>
 
-[**Buy the hardware now - REDUCED PRICES.**](https://www.metriful.com/shop)
-
 The Metriful MS430 is a low power, high accuracy, smart sensor cluster for indoor environment monitoring. It operates via a simple I2C-compatible interface and measures eighteen variables including air quality, light and sound levels.
 
-This repository provides instructions and software examples for running the MS430 with **Raspberry Pi, Arduino, ESP8266** and **ESP32** host systems.
+This repository provides instructions and software examples for running the MS430 with **Raspberry Pi (0/2/3/4/Pico), Arduino, ESP8266** and **ESP32** host systems.
 
-Code examples include interfaces to **IFTTT, Home Assistant** and **IoT cloud platforms**, as well as **real-time graph software, web servers** and **interrupt detection**.
+Code examples include interfaces to **IFTTT, Home Assistant, ESPHome** and **IoT cloud platforms**, as well as **real-time graph software, web servers** and **interrupt detection**.
 
 This readme provides a quick-start guide to running the examples on various host systems.
 
-The [**User Guide**](User_guide.pdf) gives an overview of the code examples and explains more about what the device measures. 
+The [**User Guide**](User_guide.pdf) explains more about what the device measures. 
 
 The [**Datasheet**](Datasheet.pdf) is a detailed specification of the electrical and communications interfaces of the MS430. 
 
@@ -23,8 +21,9 @@ The [**Datasheet**](Datasheet.pdf) is a detailed specification of the electrical
 
 #### Hardware setup
 - **[Handling precautions](#handling-precautions)**<br>
-- **[Arduino](#arduino)**<br>
-- **[Raspberry Pi](#raspberry-pi)**<br>
+- **[Arduino Nano 33 IoT, MKR WiFi 1010, Uno, Nano](#arduino-nano-33-iot-mkr-wifi-1010-uno-nano)**<br>
+- **[Raspberry Pi 0/2/3/4](#raspberry-pi-versions-0234)**<br>
+- **[Raspberry Pi Pico](#raspberry-pi-pico)**<br>
 - **[ESP8266](#esp8266)**<br>
 - **[ESP32](#esp32)**<br>
 - **[Particle sensor](#connecting-and-enabling-a-particle-sensor)**<br>
@@ -32,10 +31,12 @@ The [**Datasheet**](Datasheet.pdf) is a detailed specification of the electrical
 - **[IoT cloud setup](#iot-cloud-setup)**<br>
 - **[Graph web server](#graph-web-server)**<br>
 - **[IFTTT example](#ifttt-example)**<br>
-- **[Home Assistant example](#home-assistant-example)**<br>
+- **[ESPHome for Home Assistant](#esphome-for-home-assistant)**<br>
+- **[Home Assistant POST example](#home-assistant-post-example)**<br>
 - **[Graph viewer software](#graph-viewer-software)**<br>
 - **[Fahrenheit temperatures](#fahrenheit-temperatures)**<br>
-#### Other information 
+#### Other information
+- **[Library and software versions](#library-and-software-versions)**<br>
 - **[Case and enclosure ideas](#case-enclosure-and-mounting-ideas)**<br>
 - **[Troubleshooting](#troubleshooting)**<br>
 - **[Changelog](#changelog)**<br>
@@ -53,7 +54,7 @@ The MS430 can be damaged by static electricity discharges. Minimize this risk by
 - Keep away from metal objects which could cause shorted connections
 
 
-## Arduino
+## Arduino Nano 33 IoT, MKR WiFi 1010, Uno, Nano
 
 All code examples in the Arduino folder run on the Arduino Nano 33 IoT and Arduino MKR WiFi 1010, while those not requiring a network connection also run on Arduino Uno and Nano. 
 
@@ -63,7 +64,7 @@ Note that steps 1 and 2 are already complete if you have used Arduino before on 
 
 1. Download and install the [Arduino IDE](https://www.arduino.cc/en/main/software) on your computer.
 2. Start the Arduino IDE for the first time. This will create a folder named **Arduino/libraries** in your user area (e.g. in the Documents folder on Windows computers).
-3. Download and unzip the [Sensor repository](https://www.github.com/metriful/sensor). From this, copy the folder **Metriful_Sensor** (located within the Arduino folder) into the Arduino libraries folder in your user area. Delete any previous version you may have.
+3. Clone, or download and unzip, the [Sensor repository](https://www.github.com/metriful/sensor). From this, copy the folder **Metriful_Sensor** (located within the Arduino folder) into the Arduino libraries folder in your user area. Remove any previous version you may have. The rest of the downloaded repository can be placed anywhere e.g. in your documents folder.
 
 If using **Arduino Nano 33 IoT** or **Arduino MKR WiFi 1010**, also do the following:
 
@@ -85,9 +86,8 @@ If using **Arduino Nano 33 IoT** or **Arduino MKR WiFi 1010**, also do the follo
 |        SIT      |        D7            |         D7           |        A2           |        D5           |
 |        RDY      |        D2            |         D2           |        D11          |        D0           |
 
-* Arduino Nano 33 IoT used a software I2C library in previous code versions but now uses the hardware I2C pins.
-* MS430 pin VDD is not used with the 5V systems (Uno and Nano) and VIN is not used with the 3.3V systems (Nano 33 IoT and MKR WiFi 1010).
-* LIT/SIT connections are optional and only required if you are using light/sound interrupts.
+* MS430 pin VDD is not used with the 5V systems (Uno and Nano) and pin VIN is not used with the 3.3V systems (Nano 33 IoT and MKR WiFi 1010).
+* LIT/SIT connections are optional and only required if you are using light/sound interrupt outputs.
 * VPU can be supplied from any spare host digital output pin set to a high voltage state. This can be useful for hosts without enough power output pins.
 
 ### To run an example program on Arduino
@@ -95,38 +95,39 @@ If using **Arduino Nano 33 IoT** or **Arduino MKR WiFi 1010**, also do the follo
 1. Wire the MS430 board to the Arduino as described in the previous section.
 2. Plug the Arduino into your computer via USB.
 3. Start the Arduino IDE and open the chosen example code file, e.g. **simple_read_sound.ino**
-4. In the Arduino IDE menu, go to Tools > Port and select the port with the Arduino attached.
-5. Go to Tools > Board and select the Arduino model (Uno / Nano / Nano 33 IoT / MKR WiFi 1010).
+4. In the Arduino IDE menu, go to Tools > Board and select the Arduino model (Uno / Nano / Nano 33 IoT / MKR WiFi 1010).
+5. Go to Tools > Port and select the port with the Arduino attached.
 6. Select Sketch > Upload and wait for upload confirmation.
 7. Go to Tools > Serial Monitor to view the output (ensure **9600 baud** is selected in the monitor).
 
 
-## Raspberry Pi
+## Raspberry Pi (versions 0/2/3/4)
 
-The example programs for Raspberry Pi use Python 3 and are provided in the **Raspberry_Pi** folder, within the **Python** folder.
+The example programs for Raspberry Pi computers use Python 3 and are located in the **Python/Raspberry_Pi** folder.
 
 ### First time Raspberry Pi setup
 
 This setup assumes that you are using Raspberry Pi OS. The standard OS version comes with all required Python packages already installed (except packages for the [Graph viewer software](#graph-viewer-software)). The **Lite** (command line) OS version requires package installation, as listed below.
 
-1. If you are using Raspberry Pi OS Lite (or get missing package errors), run the following commands to install the packages needed: 
+1. If you are using Raspberry Pi OS Lite (or get missing package errors), run the following commands to install required packages:
 	```
 	sudo apt-get update
 	sudo apt install i2c-tools python3-smbus python3-rpi.gpio
+	pip3 install jinja2 psutil pyserial requests
 	```
 
 2. Enable I2C on your Raspberry Pi using the raspi-config utility by opening a terminal and running:
 	```
 	sudo raspi-config
 	```
-	Select **5 Interfacing Options** and then **P5 I2C**. A prompt will appear asking "Would you like the ARM I2C interface to be enabled?": select **Yes** and then exit the utility.
+	Select **Interface Options** and then **I2C**. A prompt will appear asking "Would you like the ARM I2C interface to be enabled?": select **Yes** and then exit the utility.
 3. Shut-down the Raspberry Pi and disconnect the power. Wire up the hardware as described in the following section. Double-check the wiring then restart the Pi.
 4. Check that the Metriful MS430 board can be detected by running: 
 	```
 	sudo i2cdetect -y 1
 	```
 	This should report the 7-bit address number **71**.
-5. Download and unzip this [Sensor repository](https://www.github.com/metriful/sensor). The Raspberry Pi examples are found within the folder named **Raspberry_Pi**, inside the **Python** folder.
+5. Clone, or download and unzip, this [Sensor repository](https://www.github.com/metriful/sensor), placing the folder anywhere on your system e.g. in your user home folder. The Raspberry Pi examples are in the **Python/Raspberry_Pi** folder.
 
 ### Wiring for Raspberry Pi
 
@@ -142,18 +143,65 @@ This setup assumes that you are using Raspberry Pi OS. The standard OS version c
 |         SIT       |          8              |        GPIO 14        |
 |         RDY       |          11             |        GPIO 17        |
 
-* Raspberry Pi pin numbering is [shown here](https://www.raspberrypi.org/documentation/usage/gpio/README.md).
+* Raspberry Pi pin numbering is [shown here](https://www.raspberrypi.com/documentation/computers/os.html#gpio-and-the-40-pin-header).
 * MS430 pin VIN is not used.
 * LIT/SIT connections are optional and only required if you are using light/sound interrupts.
 
 ### To run an example Raspberry Pi program:
 
 1. Wire the MS430 to the Pi as described in the previous section.
-2. Open a terminal and change to the code examples folder **Raspberry_Pi**. 
-3. Run one of the example programs using Python 3:
+2. Open a terminal and navigate to the code examples folder **Python/Raspberry_Pi**. 
+3. Run the example programs using Python 3, for example:
 	```
 	python3 simple_read_sound.py
 	```
+
+
+## Raspberry Pi Pico
+
+All code examples in the Arduino folder work with the official Raspberry Pi Pico W and all non-WiFi examples work with the non-wireless Pico version.
+
+### First time Raspberry Pi Pico setup
+
+Note that steps 1 and 2 are already complete if you have used Arduino IDE before on your computer.
+
+1. Download and install the [Arduino IDE](https://www.arduino.cc/en/main/software) on your computer.
+2. Start the Arduino IDE for the first time. This will create a folder named **Arduino/libraries** in your user area (e.g. in the Documents folder on Windows computers).
+3. Clone, or download and unzip, the [Sensor repository](https://www.github.com/metriful/sensor). From this, copy the folder **Metriful_Sensor** (located within the Arduino folder) into the Arduino libraries folder in your user area. Remove any previous version you may have. The rest of the downloaded repository can be placed anywhere e.g. in your documents folder.
+4. In the Arduino IDE menu, go to File > Preferences. In the box labeled "Additional Boards Manager URLs", paste the following link on a new line:
+	```
+	https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+	```
+5. In the Arduino IDE menu, go to Tools > Board > Boards Manager. Search for and install the package named **Raspberry Pi Pico/RP2040 by Earle F. Philhower**.
+
+### Wiring for Raspberry Pi Pico
+
+|    MS430 pin    |    Pico pin number   | 
+|:---------------:|:--------------------:|
+|        VIN      |        -             |
+|        VDD      |        36            |
+|        GND      |        23            | 
+|        VPU      |        36            | 
+|        SCL      |        27            |
+|        SDA      |        26            |
+|        LIT      |        31            |
+|        SIT      |        32            |
+|        RDY      |        34            |
+
+* The pin numbering is shown on the offial pinout datasheet available at [https://datasheets.raspberrypi.com](https://datasheets.raspberrypi.com).
+* MS430 pin VIN is not used.
+* LIT/SIT connections are optional and only required if you are using light/sound interrupts.
+* VPU can be supplied from any spare host digital output pin set to a high voltage state. This can be useful for hosts without enough power output pins.
+
+### To run an example program on Raspberry Pi Pico
+
+1. Wire the MS430 board to the Pico as described in the previous section.
+2. Plug the Pico board into your computer via USB.
+3. Start the Arduino IDE and open the chosen example code file, e.g. **simple_read_sound.ino**
+4. In the Arduino IDE menu, go to Tools > Board and select "Raspberry Pi Pico W" or "Raspberry Pi Pico" as appropriate.
+5. Go to Tools > Port and select the port with the Pico attached.
+6. Select Sketch > Upload and wait for upload confirmation.
+7. Go to Tools > Serial Monitor to view the output (ensure **9600 baud** is selected in the monitor).
 
 
 ## ESP8266
@@ -162,20 +210,17 @@ All code examples in the Arduino folder have been tested on NodeMCU and Wemos D1
 
 Other ESP8266 development boards should also work but may use a different pinout and may therefore require edits to the host_pin_definitions.h file.
 
-Note that ESP8266 does not have a hardware I2C module, so any of the normal GPIO pins can be used for the I2C bus. 
-
 ### First time ESP8266 setup
 
 Note that steps 1 and 2 are already complete if you have used Arduino IDE before on your computer.
 
 1. Download and install the [Arduino IDE](https://www.arduino.cc/en/main/software) on your computer.
 2. Start the Arduino IDE for the first time. This will create a folder named **Arduino/libraries** in your user area (e.g. in the Documents folder on Windows computers).
-3. Download and unzip the [Sensor repository](https://www.github.com/metriful/sensor). From this, copy the folder **Metriful_Sensor** (located within the Arduino folder) into the Arduino libraries folder in your user area. Remove any previous version you may have.
-4. In the Arduino IDE menu, go to File > Preferences. In the box labeled "Additional Boards Manager URLs", paste the following link:
+3. Clone, or download and unzip, the [Sensor repository](https://www.github.com/metriful/sensor). From this, copy the folder **Metriful_Sensor** (located within the Arduino folder) into the Arduino libraries folder in your user area. Remove any previous version you may have. The rest of the downloaded repository can be placed anywhere e.g. in your documents folder.
+4. In the Arduino IDE menu, go to File > Preferences. In the box labeled "Additional Boards Manager URLs", paste the following link on a new line:
 	```
 	https://arduino.esp8266.com/stable/package_esp8266com_index.json
 	```
-	If there is already text in the box, place a comma and paste the new text after it.
 5. In the Arduino IDE menu, go to Tools > Board > Boards Manager. Search for and install the package named **esp8266 by ESP8266 Community**.
 
 ### Wiring for ESP8266
@@ -202,8 +247,8 @@ Note that steps 1 and 2 are already complete if you have used Arduino IDE before
 1. Wire the MS430 board to the ESP8266 as described in the previous section.
 2. Plug the ESP8266 board into your computer via USB.
 3. Start the Arduino IDE and open the chosen example code file, e.g. **simple_read_sound.ino**
-4. In the Arduino IDE menu, go to Tools > Port and select the port with the ESP8266 attached.
-5. Go to Tools > Board and select your development board, or "Generic ESP8266 Module", or experiment until you find one that works.
+4. In the Arduino IDE menu, go to Tools > Board and select your development board, or "Generic ESP8266 Module", or experiment until you find one that works.
+5. Go to Tools > Port and select the port with the ESP8266 attached.
 6. Select Sketch > Upload and wait for upload confirmation.
 7. Go to Tools > Serial Monitor to view the output (ensure **9600 baud** is selected in the monitor).
 
@@ -220,13 +265,12 @@ Note that steps 1 and 2 are already complete if you have used Arduino IDE before
 
 1. Download and install the [Arduino IDE](https://www.arduino.cc/en/main/software) on your computer.
 2. Start the Arduino IDE for the first time. This will create a folder named **Arduino/libraries** in your user area (e.g. in the Documents folder on Windows computers).
-3. Download and unzip the [Sensor repository](https://www.github.com/metriful/sensor). From this, copy the folder **Metriful_Sensor** (located within the Arduino folder) into the Arduino libraries folder in your user area. Remove any previous version you may have.
-4. In the Arduino IDE menu, go to File > Preferences. In the box labeled "Additional Boards Manager URLs", paste the following link:
+3. Clone, or download and unzip, the [Sensor repository](https://www.github.com/metriful/sensor). From this, copy the folder **Metriful_Sensor** (located within the Arduino folder) into the Arduino libraries folder in your user area. Remove any previous version you may have. The rest of the downloaded repository can be placed anywhere e.g. in your documents folder.
+4. In the Arduino IDE menu, go to File > Preferences. In the box labeled "Additional Boards Manager URLs", paste the following link on a new line:
 	```
-	https://dl.espressif.com/dl/package_esp32_index.json
+	https://espressif.github.io/arduino-esp32/package_esp32_index.json
 	```
-	If there is already text in the box, place a comma and paste the new text after it.
-5. In the Arduino IDE menu, go to Tools > Board > Boards Manager. Search for and install the package named **esp32 by Espressif Systems**.
+5. In the Arduino IDE menu, go to Tools > Board > Boards Manager. Search for and install the package named **esp32 by Espressif Systems** then restart the IDE.
 
 ### Wiring for ESP32
 
@@ -251,15 +295,15 @@ Note that steps 1 and 2 are already complete if you have used Arduino IDE before
 1. Wire the MS430 board to the ESP32 as described in the previous section.
 2. Plug the ESP32 board into your computer via USB.
 3. Start the Arduino IDE and open the chosen example code file, e.g. **simple_read_sound.ino**
-4. In the Arduino IDE menu, go to Tools > Port and select the port with the ESP32 attached.
-5. Go to Tools > Board and select your development board, or experiment until you find one that works.
+4. In the Arduino IDE menu, go to Tools > Board and select your development board, or experiment until you find one that works.
+5. Go to Tools > Port and select the port with the ESP32 attached.
 6. Select Sketch > Upload and wait for upload confirmation.
 7. Go to Tools > Serial Monitor to view the output (ensure **9600 baud** is selected in the monitor).
 
 
 ## Connecting and enabling a particle sensor
 
-The MS430 is compatible with two widely-available air particle sensors: the Shinyei PPD42 and the Nova SDS011. The particle sensor is optional and only a single sensor can be connected at any time.
+The MS430 is compatible with two widely-available air particle sensors: the Shinyei PPD42 and the Nova SDS011. The particle sensor is optional and only a single sensor can be connected at any time. **The PPD42 is not recommended** and is supported for backwards compatibility only.
 
 Both sensor models require three wire connections: **5V, GND, PRT** and a small edit to the example code.
 
@@ -277,7 +321,8 @@ Both sensor models require three wire connections: **5V, GND, PRT** and a small 
 
 |      Host device      | 5V pin name/number |
 |:---------------------:|:------------------:|
-|     Raspberry Pi      |       Pin 2        |
+| Raspberry Pi 0/2/3/4  |       Pin 2        |
+|   Raspberry Pi Pico   |       Pin 40       |
 |     Arduino Uno       |   5V or IOREF (*)  |
 |     Arduino Nano      |        5V          | 
 |  Arduino Nano 33 IoT  |       VUSB (**)    | 
@@ -289,7 +334,8 @@ Both sensor models require three wire connections: **5V, GND, PRT** and a small 
 
 (**) To obtain 5V output on the **Nano 33 IoT**: the solder bridge labeled "VUSB" on the underside of the Arduino must be soldered closed, then use the VUSB pin.
 
-* **Raspberry Pi** pin 9 can be used as an extra GND connection.
+* **Raspberry Pi 0/2/3/4:** pin 9 can be used as an extra GND connection.
+* **Raspberry Pi Pico:** pins 3, 8, 13, 18, 28, 33, 38 can be used as extra GND connections.
 * Pin labels for ESP8266 and ESP32 may be different on some boards
 
 ### Enable the particle sensor in the code examples
@@ -407,19 +453,65 @@ You can customize all parts of this message.
 	```
 10. Click **Create action**, then **Continue**, then **Finish** to complete the applet setup.
 11. Go to your IFTTT **Home** page and click on the applet you just created.
-12. Click the triangle Webhooks icon, then **Documentation** at top right.
+12. Click the triangle Webhooks icon, then on **Documentation**.
 13. Copy the key (letter number sequence) that is displayed.
-14. Edit the example code file **IFTTT**, pasting in this key and the event name (from step 4).
+14. Edit the **IFTTT** example code file, pasting in this key and the event name (from step 4).
 15. Run the program.
 
 
-## Home Assistant example
+## ESPHome for Home Assistant
+
+Send sensor data to an installation of [Home Assistant](https://www.home-assistant.io) using the [ESPHome system](https://esphome.io).
+
+Your microcontroller device must be one of: ESP8266, ESP32, Raspberry Pi Pico W. Other devices (Arduino or Raspberry Pi 0/2/3/4) must use the [Home Assistant POST](#home-assistant-post-example) method instead.
+
+These instructions assume that you already have a working Home Assistant installation. All of the steps are done from your personal computer, not the Home Assistant server computer.
+
+1. [Install ESPHome](https://esphome.io/guides/installing_esphome) on your computer.
+
+2. In the Arduino/Metriful_Sensor folder, run terminal command: ```esphome dashboard .``` (note the dot).
+This starts a temporary local web server on your computer. Leave this process running. 
+
+3. Go to [http://0.0.0.0:6052](http://0.0.0.0:6052) or [http://127.0.0.1:6052](http://127.0.0.1:6052) in a browser to view the temporary ESPHome dashboard. Click "new device", ignore any note about HTTPS, and click "continue".
+
+4. In the dialog, give your device a unique name (this is the **device_name**) and input your WiFi network name (SSID) and password.
+
+5. Choose your board type from the list (ESP, Pico, etc.), then copy the encryption key for later use (it can also be found in a local yaml file). 
+
+6. Plug the microcontroller board into your computer via USB, then click "install" and choose:
+	* **Manual download** for Raspberry Pi Pico W; install is complete when the drive disappears.
+	* **Plug into the computer running ESPHome Dashboard** for all other boards. The install is complete when coloured logs about WiFi signal appear in the window: then click "stop" to close the window.
+
+7. In the Arduino/Metriful_Sensor folder, a new file called <device_name>.yaml should have appeared. As its first three lines, it has:
+```
+esphome:
+  name: <device_name>
+  friendly_name: <device_name>
+```
+Where ```<device_name>``` is the name you chose. **Replace** these three lines with the entire contents of Arduino/Metriful_sensor/ESPHome_patch.yaml copied and pasted.
+
+8. In the **substitutions** section of the edited yaml file, provide your device_name and (optionally) values for the other two variables. Save the file.
+
+9. A new tile should have appeared on the web page, titled with your device_name. Click the 3 dots on it, then on "install" and choose "wirelessly". The install is complete when coloured logs about WiFi signal appear in the window: then click "stop" to close the window. **Close the browser and stop the server process that began in step 2.**
+
+10. Go to your Home Assistant web dashboard. There may be a notification that a new device has been discovered. Click "configure" on it and enter the encryption key from step 5 (the key is also saved in <device_name>.yaml).
+
+**If you are not prompted about the device discovery:** go to Settings > Devices & Services > Devices tab > "Add device". Search for ESPHome in the list, then for "Host" enter **<device_name>.local** where <device_name> is the name you chose.
+
+11. In Home Assistant go to Settings > Devices & Services > Devices tab, click on the newly added device and click "add to dashboard" under its sensors list. The list of data variables appears as a card on the dashboard/overview page.
+
+12. You can improve the appearance of the dashboard card, for example: edit the card to rename the two air quality values (remove the device_name from their display name), add a title to the card, remove variables, and reorder the list. You can also add data graphs, gauges, etc.
+
+
+## Home Assistant POST example
 
 <p align="center"><img src="pictures/home_assistant.png?raw=true"/></p>
 
-This code example shows how to send sensor data to an installation of [Home Assistant](https://www.home-assistant.io) on your home network. These instructions cover setup, creating an automation using your data, and removing your data. 
+Send sensor data to an installation of [Home Assistant](https://www.home-assistant.io) using HTTP requests.
 
-Note: this was tested on Home Assistant OS v0.117.2
+This code example is suitable for all supported MS430 hosts. If you are using ESP8266, ESP32 or Raspberry Pi Pico W, you can also use our [ESPHome example](#esphome-for-home-assistant).
+
+These instructions assume that you already have a working Home Assistant installation.
 
 ### Setup
 
@@ -431,20 +523,18 @@ Note: this was tested on Home Assistant OS v0.117.2
 		* Paste the token into the program file.
 2. Run the program and wait a few minutes so that the first data have been sent.
 3. Check that data are being received by Home Assistant:
-	* Go to the **Configuration** page of Home Assistant
-	* Click **Entities** in the component list
+	* Go to Settings > Devices & Services > Entities tab
 	* There should be a series of entries with names like SENSOR_NAME.temperature, SENSOR_NAME.air_quality_index, etc. Where SENSOR_NAME is the name you chose in the program file.
 
 
 ### Display/view the data in Home Assistant
 
 * Add display cards to the **Overview** page dashboard - these can be text labels, gauges, graphs etc.
-	1. Click the 3 dots at the top right corner and choose **Edit Dashboard**
-	2. Add a card with the **+** symbol
-	3. Choose **Entities**, **Gauge**, or **History graph**
-	4. Add the variables using the entities dropdown list
+	1. Click the 3 dots at the top right corner and choose **Edit Dashboard** then **+ Add Card**
+	2. On the "By entity" tab, search for your chosen SENSOR_NAME and select one or more data variables
+	3. Pick a display card, e.g. **Entities**, **Gauge**, or **History graph**
 
-* You can also view data graphs on the **History** page.
+* You can also view data graphs on the Home Assistant **History** page.
 
 * If Home Assistant is rebooted, cards will show **Entity not available** (and the sensor will disappear from the entity list) until a new value is received. The data history will also reappear when this happens.
 
@@ -453,9 +543,9 @@ Note: this was tested on Home Assistant OS v0.117.2
 
 This simple example shows how to generate a notification when the temperature goes above 22 °C. Much more advanced triggers and actions can be configured.
 
-1. On the Configuration page, go to: Automations and click the **+** to create a new Automation
-2. Click **skip** on the "Create a new automation" window
-3. On the "New Automation" page, click the 3 dots at the top right corner and choose **Edit as YAML**
+1. Go to Settings > Automations & Scenes
+2. Click **+ create automation** to create a new automation
+3. On the "New Automation" page, click the 3 dots at the top right corner and choose **Edit in YAML**
 4. Delete everything in the text box and replace with:
 	```
 	trigger:
@@ -470,38 +560,7 @@ This simple example shows how to generate a notification when the temperature go
 	```
 	Replace kitchen3 with your SENSOR_NAME chosen name and the other fields with your own values.
 5. Click the save icon to finish.
-6. Optional: click **execute** to test it (the action is forced to run without the trigger condition). 
-7. Optional: edit it further (e.g. name, description) via the UI on the Configuration > Automations page.
-
-### Removing entities and data from Home Assistant
-
-* To hide data from view on the Overview page dashboard, simply edit or delete the cards. 
-* To remove an entity and its data history from the system, follow this procedure:
-
-**Initial one-time setup**
-
-1. Install the Home Assistant SQLite add-on (via the Supervisor page > Add-on store > install "SQLite Web").
-2. On the Supervisor page: click the SQLite Web icon, go to the Configuration tab and change "read_only" to **false**, then save.
-
-**Entity removal**
-
-1. Go to the **SQLite Web** page in the Home Assistant menu.
-2. Click **events**, then open the **Query** tab.
-3. In the text box put:
-	```
-	delete from states where entity_id = "kitchen3.temperature";
-	```
-	where **kitchen3.temperature** is the entity to remove. Or remove all entities with name beginning "kitchen3." using the % wildcard:
-	```
-	delete from states where entity_id like "kitchen3.%";
-	```
-	(replace kitchen3 with your SENSOR_NAME name).
-4. Click the **Execute** button.
-5. In the text box put:
-	```
-	vacuum;
-	```
-6. Click the **Execute** button.
+6. Optional: click **run** to test it (the action is forced to run without the trigger condition). 
 
 
 ## Graph viewer software
@@ -512,15 +571,15 @@ The **graph viewer** uses a graphical interface to show environment data updatin
 
 Note that the graph viewer does not run on Raspberry Pi OS **Lite** because there is no desktop interface.
 
-There are two versions, to be used with Raspberry Pi or Arduino, provided in the Python folder.
+There are two versions provided in the Python folder:
 
 1. **graph_viewer_I2C.py**
 
-	Runs only on Raspberry Pi and communicates directly with the MS430 board which is connected to the Pi GPIO pins.
+	Runs only on Raspberry Pi 0/2/3/4 and communicates directly with the MS430 board which is connected to the Pi GPIO pins.
 
 2. **graph_viewer_serial.py**
 
-	Runs on multiple operating systems and uses serial over USB to get data from the MS430 sensor via a microcontroller board (e.g. Arduino, ESP8266, etc).
+	Runs on multiple operating systems (windows, linux, mac) and uses serial over USB to get data from the MS430 sensor via a microcontroller board (e.g. Arduino, ESP8266, Raspberry Pi Pico etc).
 
 ### Package installation commands
 
@@ -533,15 +592,16 @@ pip3 install pyqtgraph pyqt5 pyserial
 
 **Linux, including Raspberry Pi**
 ```
+sudo apt install python3-pyqt5 libatlas-base-dev libopenblas-dev
 pip3 install pyqtgraph pyserial
-sudo apt install python3-pyqt5
 ```
+Also on Raspberry Pi: you will need to complete the [first time Raspberry Pi setup](#first-time-raspberry-pi-setup) if not already done.
 
 **Extra steps for some Linux versions e.g. Ubuntu**
-* Install pip3 by enabling the "Universe" software repository, then ```sudo apt install python3-pip```
+* If not already present, install pip3 by enabling the "Universe" software repository, then ```sudo apt install python3-pip```
 * Add the user to the **dialout** group for permission to use the serial port.
 
-### Running graph_viewer_I2C.py (Raspberry Pi)
+### Running graph_viewer_I2C.py (Raspberry Pi 0/2/3/4 only)
 
 1. Follow the usual hardware setup for Raspberry Pi and check that the MS430 board is recognized by the Pi.
 2. Run the program with: ```python3 graph_viewer_I2C.py```
@@ -549,7 +609,7 @@ sudo apt install python3-pyqt5
 ### Running graph_viewer_serial.py (all operating systems)
 
 1. Follow the usual hardware setup for your microcontroller board.
-2. Program the microcontroller board with either **cycle_readout.ino** or **on_demand_readout.ino**, with parameter ```printDataAsColumns = true```
+2. Program the microcontroller board with either **cycle_readout.ino** or **on_demand_readout.ino**, with parameter ```printDataAsColumns = true``` and a cycle period of 3 seconds (or less).
 3. Connect the microcontroller USB cable to your computer and close all serial monitor software.
 4. Edit the Python code file so that the particle sensor and temperature unit settings match those used on the microcontroller.
 5. Put the serial port name (system dependent, e.g. COM1) in the **serial_port_name** parameter in the code file.
@@ -569,10 +629,43 @@ The temperature is always measured by the MS430 as a Celsius value. The software
 
 * On Arduino
 
-	In file **Metriful_sensor.h** set the following:
+	In file **Metriful_sensor.h** un-comment the following line:
 	```
 	#define USE_FAHRENHEIT
 	```
+
+
+## Library and software versions
+
+The following versions were used for testing.
+
+### Arduino
+
+* Arduino IDE: 2.2.1
+* Raspberry Pi Pico/RP2040 by Earle F. Philhower board package: 3.6.0
+* ESP32 by Espressif Systems board package: 2.0.14
+* ESP8266 by ESP8266 Community board package: 3.1.2
+* Arduino SAMD board package: 1.8.13
+* WiFiNINA library: 1.8.14
+
+### Python / Raspberry Pi
+
+* Raspberry Pi OS: 11 (bullseye)
+* i2c-tools: 4.2-1+b1
+* python3-smbus: 4.2-1+b1
+* python3-rpi.gpio: 0.7.0-0.2+b1
+* Python version: 3.9.2
+* Jinja2: 2.11.3
+* psutil: 5.8.0
+* PyQt5: 5.15.2
+* pyqtgraph: 0.13.3
+* pyserial: 3.5b0
+* requests: 2.25.1
+
+### Home Assistant / ESPHome
+
+* Home Assistant OS: 10.5 (RPi 3)
+* ESPHome: 2023.9.3
 
 
 ## Case, enclosure and mounting ideas
@@ -581,7 +674,11 @@ The simplest arrangement is to leave the sensor board open to the air. Use bolts
 
 ### Enclosing the board in a box or case
 
-You can use a box or case with small holes for air and sound entry. Light entry can be through a transparent or open window hole. The following tips may help:
+You can use a box or case with small holes for air and sound entry. Light entry can be through a transparent or open window hole.
+
+A smoke alarm with the electronics removed makes an ideal, inexpensive case. Ensure that this cannot be mistaken for a functioning smoke alarm for safety reasons.
+
+The following tips may also help:
 
 * Fix the board as close as possible to the box wall but without having the sensors touching the wall.
 

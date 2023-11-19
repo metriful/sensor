@@ -1,0 +1,146 @@
+<!DOCTYPE HTML>
+<!--Copyright 2023 Metriful Ltd. Licensed under the MIT License.-->
+<html>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Metriful Sensor Demo</title>
+        <style>
+            h1 {font-size: 1.5rem;}
+            h2 {font-size: 1rem; margin-top: 2rem;}
+            a {padding: 0.5rem; font-size: 1rem; display:block;}
+            table, th, td {font-size: 1rem;}
+            table {margin-left:auto; margin-right:auto;}
+            body {padding: 0 1rem; font-family: Verdana, sans-serif;
+                  background-color:#ededed; text-align:center;}
+            th, td {padding: 0.025rem 0.5rem; text-align: left;}
+            .v1 {text-align: right; width: 5rem;}
+            .v2 {text-align: right; width: 6.5rem;}
+            .v3 {text-align: right; width: 5rem;}
+            .v4 {text-align: right; width: 5rem;}
+            .v5 {text-align: right; width: 5.5rem;}
+        </style>
+    </head>
+    <body>
+        <h1>Indoor Environment Data</h1>
+
+    {% if air_data is not none %}
+    <p>
+        <h2>Air Data</h2>
+        <table>
+            <tr>
+                <td>Temperature</td>
+                <td class='v1'>{{ '%.1f' % air_data['T'] }}</td>
+                <td>{{ air_data['T_unit'] }}</td>
+            </tr>
+            <tr>
+                <td>Pressure</td>
+                <td class='v1'>{{ air_data['P_Pa'] }}</td><td>Pa</td>
+            </tr>
+            <tr>
+                <td>Humidity</td>
+                <td class='v1'>{{ '%.1f' % air_data['H_pc'] }}</td><td>%</td>
+            </tr>
+            <tr>
+                <td>Gas Sensor Resistance</td>
+                <td class='v1'>{{ air_data['G_ohm'] }}</td><td>Ω</td>
+            </tr>
+        </table>
+    </p>
+    {% endif %}
+
+    {% if air_quality_data is not none %}
+    <p>
+        <h2>Air Quality Data</h2>
+        {% if air_quality_data['AQI_accuracy'] == 0 %}
+            <a>{{ interpreted_AQI_accuracy }}</a>
+        {% else %}
+            <table>
+                <tr>
+                    <td>Air Quality Index</td>
+                    <td class='v2'>{{ '%.1f' % air_quality_data['AQI'] }}</td><td></td>
+                </tr>
+                <tr>
+                    <td>Air Quality Summary</td>
+                    <td class='v2'>{{ interpreted_AQI_value }}</td><td></td>
+                </tr>
+                <tr>
+                    <td>Estimated CO₂</td>
+                    <td class='v2'>{{ '%.1f' % air_quality_data['CO2e'] }}</td><td>ppm</td>
+                </tr>
+                <tr>
+                    <td>Equivalent Breath VOC</td>
+                    <td class='v2'>{{ '%.2f' % air_quality_data['bVOC'] }}</td><td>ppm</td>
+                </tr>
+            </table>
+        {% endif %}
+    </p>
+    {% endif %}
+
+    {% if sound_data is not none %}
+        <p>
+            <h2>Sound Data</h2>
+            <table>
+                <tr>
+                    <td>A-weighted Sound Pressure Level</td>
+                    <td class='v3'>{{ '%.1f' % sound_data['SPL_dBA'] }}</td><td>dBA</td>
+                </tr>
+                {% for band_freq in sound_band_mids_Hz %}
+                    <tr>
+                        <td>Frequency Band {{ loop.index }} ({{ band_freq }}&nbsp;Hz) SPL</td>
+                        <td class='v3'>{{ '%.1f' % sound_data['SPL_bands_dB'][loop.index0] }}</td>
+                        <td>dB</td>
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <td>Peak Sound Amplitude</td>
+                    <td class='v3'>{{ '%.2f' % sound_data['peak_amp_mPa'] }}</td><td>mPa</td>
+                </tr>
+            </table>
+        </p>
+    {% endif %}
+
+    {% if light_data is not none %}
+        <p>
+            <h2>Light Data</h2>
+            <table>
+                <tr>
+                    <td>Illuminance</td>
+                    <td class='v4'>{{ '%.2f' % light_data['illum_lux'] }}</td><td>lux</td>
+                </tr>
+                <tr>
+                    <td>White Light Level</td>
+                    <td class='v4'>{{ light_data['white'] }}</td><td></td>
+                </tr>
+            </table>
+        </p>
+    {% endif %}
+
+    {% if particle_data is not none %}
+        <p>
+            <h2>Air Particulate Data</h2>
+            <table>
+                <tr>
+                    <td>Sensor Duty Cycle</td>
+                    <td class='v5'>{{ '%.2f' % particle_data['duty_cycle_pc'] }}</td><td>%</td>
+                </tr>
+                <tr>
+                    <td>Particle Concentration</td>
+                    <td class='v5'>{{ '%.2f' % particle_data['concentration'] }}</td>
+                    <td>{{ particle_data['conc_unit'] }}</td>
+                </tr>
+            </table>
+        </p>
+    {% endif %}
+    
+    {% if readout_time_and_date is not none %}
+    <p>
+        <h2>The last sensor reading was at {{ readout_time_and_date }}</h2>
+    </p>
+    {% endif %}
+
+    <p style="margin-top: 2rem;">
+        <a href="https://sensor.metriful.com">sensor.metriful.com</a>
+    </p>
+    </body>
+</html>

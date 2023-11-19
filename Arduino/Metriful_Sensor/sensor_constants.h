@@ -1,15 +1,15 @@
 /*
-   sensor_constants.h
+  sensor_constants.h
 
-   This file defines constant values and data structures which are used 
-   in the control of the Metriful MS430 board and the interpretation of
-   its output data. All values have been taken from the MS430 datasheet.
+  This file defines constant values and data structures which are used
+  in the control of the Metriful MS430 board and the interpretation of
+  its output data. All values have been taken from the MS430 datasheet.
 
-   Copyright 2020 Metriful Ltd. 
-   Licensed under the MIT License - for further details see LICENSE.txt
+  Copyright 2020-2023 Metriful Ltd.
+  Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit 
-   https://github.com/metriful/sensor
+  For code examples, datasheet and user guide, visit
+  https://github.com/metriful/sensor
 */
 
 #ifndef SENSOR_CONSTANTS_H
@@ -95,8 +95,10 @@
 
 // Frequency bands for sound level measurement
 #define SOUND_FREQ_BANDS 6
-static const uint16_t sound_band_mids_Hz[SOUND_FREQ_BANDS] = {125, 250, 500, 1000, 2000, 4000};
-static const uint16_t sound_band_edges_Hz[SOUND_FREQ_BANDS+1] = {88, 177, 354, 707, 1414, 2828, 5657};
+static const uint16_t sound_band_mids_Hz[SOUND_FREQ_BANDS] =
+                                {125, 250, 500, 1000, 2000, 4000};
+static const uint16_t sound_band_edges_Hz[SOUND_FREQ_BANDS+1] =
+                                {88, 177, 354, 707, 1414, 2828, 5657};
 
 // Cycle mode time period
 #define CYCLE_PERIOD_3_S    0
@@ -129,9 +131,11 @@ static const uint16_t sound_band_edges_Hz[SOUND_FREQ_BANDS+1] = {88, 177, 354, 7
 
 ///////////////////////////////////////////////////////////
 
-// Structs for accessing individual data quantities after reading a category of data
+// Structs for accessing individual data quantities after
+// reading a category of data.
 
-typedef struct __attribute__((packed)) {
+typedef struct __attribute__((packed))
+{
   uint8_t  T_C_int_with_sign;    
   uint8_t  T_C_fr_1dp; 
   uint32_t P_Pa;
@@ -140,7 +144,8 @@ typedef struct __attribute__((packed)) {
   uint32_t G_ohm;
 } AirData_t;
 
-typedef struct __attribute__((packed)) {
+typedef struct __attribute__((packed))
+{
   uint16_t AQI_int;
   uint8_t  AQI_fr_1dp;
   uint16_t CO2e_int;
@@ -150,13 +155,15 @@ typedef struct __attribute__((packed)) {
   uint8_t  AQI_accuracy;
 } AirQualityData_t;
 
-typedef struct __attribute__((packed)) {
+typedef struct __attribute__((packed))
+{
   uint16_t illum_lux_int;
   uint8_t  illum_lux_fr_2dp;
   uint16_t white;
 } LightData_t;
 
-typedef struct __attribute__((packed)) {
+typedef struct __attribute__((packed))
+{
   uint8_t  SPL_dBA_int;
   uint8_t  SPL_dBA_fr_1dp;
   uint8_t  SPL_bands_dB_int[SOUND_FREQ_BANDS];
@@ -166,7 +173,8 @@ typedef struct __attribute__((packed)) {
   uint8_t  stable;
 } SoundData_t;
 
-typedef struct __attribute__((packed)) {
+typedef struct __attribute__((packed))
+{
   uint8_t  duty_cycle_pc_int;
   uint8_t  duty_cycle_pc_fr_2dp;
   uint16_t concentration_int;

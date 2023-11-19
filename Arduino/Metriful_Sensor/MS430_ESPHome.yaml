@@ -1,0 +1,237 @@
+# ESPHome configuration for the MS430.
+
+# Copyright 2023 Metriful Ltd.
+# Licensed under the MIT License - for further details see LICENSE.txt
+
+# For code examples, datasheet and user guide, visit
+# https://github.com/metriful/sensor
+
+# This file must be included in another yaml configuration file, in which
+# "device_name" and "temperature_offset" are defined as substitutions.
+
+#########################################################################
+
+sensor:
+- platform: custom
+  lambda: |-
+    auto my_ms430 = new MS430();
+    App.register_component(my_ms430);
+    return {
+    my_ms430->temperature_s,
+    my_ms430->pressure_s,
+    my_ms430->humidity_s,
+    my_ms430->gas_s,
+    my_ms430->particle_duty_s,
+    my_ms430->particle_conc_s,
+    my_ms430->aqi_s,
+    my_ms430->CO2e_s,
+    my_ms430->bVOC_s,
+    my_ms430->aqi_acc_s,
+    my_ms430->illuminance_s,
+    my_ms430->w_light_s,
+    my_ms430->sound_spl_s,
+    my_ms430->sound_peak_s,
+    my_ms430->sound_bands_s[0],
+    my_ms430->sound_bands_s[1],
+    my_ms430->sound_bands_s[2],
+    my_ms430->sound_bands_s[3],
+    my_ms430->sound_bands_s[4],
+    my_ms430->sound_bands_s[5]
+    };
+  sensors:
+  - name: "Temperature"
+    unit_of_measurement: °C
+    accuracy_decimals: 1
+    icon: "mdi:thermometer"
+    device_class: "temperature"
+    state_class: "measurement"
+    filters:
+      - offset: ${temperature_offset}
+  - name: "Air pressure"
+    unit_of_measurement: Pa
+    accuracy_decimals: 0
+    icon: "mdi:weather-partly-rainy"
+    device_class: "atmospheric_pressure"
+    state_class: "measurement"
+  - name: "Humidity"
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    icon: "mdi:cloud-percent"
+    device_class: "humidity"
+    state_class: "measurement"
+  - name: "Gas sensor resistance"
+    unit_of_measurement: "Ω"
+    accuracy_decimals: 0
+    icon: "mdi:scent"
+    device_class: "aqi"
+    state_class: "measurement"
+  - name: "Particle sensor duty cycle"
+    unit_of_measurement: "%"
+    accuracy_decimals: 2
+    icon: "mdi:square-wave"
+    device_class: "pm25"
+    state_class: "measurement"
+  - name: "Particle concentration"
+    unit_of_measurement: "μg/m³"
+    accuracy_decimals: 2
+    icon: "mdi:chart-bubble"
+    device_class: "pm25"
+    state_class: "measurement"
+  - name: "Air quality index"
+    unit_of_measurement: ""
+    accuracy_decimals: 1
+    icon: "mdi:flower-tulip-outline"
+    device_class: "aqi"
+    state_class: "measurement"
+    on_value_range:
+      - above: -0.5
+        below: 50
+        then:
+          - text_sensor.template.publish:
+              id: aqi_text
+              state: "Good"
+      - above: 50
+        below: 100
+        then:
+          - text_sensor.template.publish:
+              id: aqi_text
+              state: "Acceptable"
+      - above: 100
+        below: 150
+        then:
+          - text_sensor.template.publish:
+              id: aqi_text
+              state: "Substandard"
+      - above: 150
+        below: 200
+        then:
+          - text_sensor.template.publish:
+              id: aqi_text
+              state: "Poor"
+      - above: 200
+        below: 300
+        then:
+          - text_sensor.template.publish:
+              id: aqi_text
+              state: "Bad"
+      - above: 300
+        then:
+          - text_sensor.template.publish:
+              id: aqi_text
+              state: "Very bad"
+  - name: "Estimated CO₂"
+    unit_of_measurement: "ppm"
+    accuracy_decimals: 1
+    icon: "mdi:molecule-co2"
+    device_class: "carbon_dioxide"
+    state_class: "measurement"
+  - name: "Equivalent breath VOC"
+    unit_of_measurement: "ppm"
+    accuracy_decimals: 2
+    icon: "mdi:account-voice"
+    device_class: "volatile_organic_compounds_parts"
+    state_class: "measurement"
+  - name: "Air quality accuracy"
+    unit_of_measurement: ""
+    accuracy_decimals: 0
+    device_class: ""
+    state_class: "measurement"
+    internal: true
+    on_value_range:
+      - above: -0.5
+        below: 0.5
+        then:
+          - text_sensor.template.publish:
+              id: aqi_acc_text
+              state: "Not yet valid"
+      - above: 0.5
+        below: 1.5
+        then:
+          - text_sensor.template.publish:
+              id: aqi_acc_text
+              state: "Low"
+      - above: 1.5
+        below: 2.5
+        then:
+          - text_sensor.template.publish:
+              id: aqi_acc_text
+              state: "Medium"
+      - above: 2.5
+        then:
+          - text_sensor.template.publish:
+              id: aqi_acc_text
+              state: "High"
+  - name: "Illuminance"
+    unit_of_measurement: "lux"
+    accuracy_decimals: 2
+    icon: "mdi:white-balance-sunny"
+    device_class: "illuminance"
+    state_class: "measurement"
+  - name: "White light level"
+    unit_of_measurement: ""
+    accuracy_decimals: 0
+    icon: "mdi:circle-outline"
+    device_class: "illuminance"
+    state_class: "measurement"
+  - name: "Sound pressure level"
+    unit_of_measurement: "dBA"
+    accuracy_decimals: 1
+    icon: "mdi:microphone"
+    device_class: "sound_pressure"
+    state_class: "measurement"
+  - name: "Peak sound amplitude"
+    unit_of_measurement: "mPa"
+    accuracy_decimals: 2
+    icon: "mdi:waveform"
+    device_class: "sound_pressure"
+    state_class: "measurement"
+  - name: "SPL at 125 Hz"
+    unit_of_measurement: "dB"
+    accuracy_decimals: 1
+    icon: "mdi:sine-wave"
+    device_class: "sound_pressure"
+    state_class: "measurement"
+  - name: "SPL at 250 Hz"
+    unit_of_measurement: "dB"
+    accuracy_decimals: 1
+    icon: "mdi:sine-wave"
+    device_class: "sound_pressure"
+    state_class: "measurement"
+  - name: "SPL at 500 Hz"
+    unit_of_measurement: "dB"
+    accuracy_decimals: 1
+    icon: "mdi:sine-wave"
+    device_class: "sound_pressure"
+    state_class: "measurement"
+  - name: "SPL at 1000 Hz"
+    unit_of_measurement: "dB"
+    accuracy_decimals: 1
+    icon: "mdi:sine-wave"
+    device_class: "sound_pressure"
+    state_class: "measurement"
+  - name: "SPL at 2000 Hz"
+    unit_of_measurement: "dB"
+    accuracy_decimals: 1
+    icon: "mdi:sine-wave"
+    device_class: "sound_pressure"
+    state_class: "measurement"
+  - name: "SPL at 4000 Hz"
+    unit_of_measurement: "dB"
+    accuracy_decimals: 1
+    icon: "mdi:sine-wave"
+    device_class: "sound_pressure"
+    state_class: "measurement"
+
+# Must add device_name into sensor names here, else difficult to
+# identify them if multiple MS430s are present in one HA installation.
+# The displayed name can be overridden in HA to hide this name on
+# the dashboard cards.
+text_sensor:
+  - platform: template
+    name: "Air quality accuracy ${device_name}"
+    icon: "mdi:magnify"
+    id: aqi_acc_text
+  - platform: template
+    name: "Air quality ${device_name}"
+    icon: "mdi:flower-tulip-outline"
+    id: aqi_text

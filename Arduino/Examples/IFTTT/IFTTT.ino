@@ -1,60 +1,62 @@
 /* 
    IFTTT.ino
-   
-   Example code for sending data from the Metriful MS430 to IFTTT.com 
-   
+
+   Example code for sending data from the Metriful MS430 to IFTTT.com
+
    This example is designed for the following WiFi enabled hosts:
    * Arduino Nano 33 IoT
    * Arduino MKR WiFi 1010
    * ESP8266 boards (e.g. Wemos D1, NodeMCU)
    * ESP32 boards (e.g. DOIT DevKit v1)
-   
+   * Raspberry Pi Pico W
+
    Environmental data values are periodically measured and compared with
    a set of user-defined thresholds. If any values go outside the allowed
    ranges, an HTTP POST request is sent to IFTTT.com, triggering an alert
-   email to your inbox, with customizable text. 
+   email to your inbox, with customizable text.
    This example requires a WiFi network and internet connection.
 
-   Copyright 2020 Metriful Ltd. 
+   Copyright 2020-2023 Metriful Ltd.
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit 
+   For code examples, datasheet and user guide, visit
    https://github.com/metriful/sensor
 */
 
 #include <Metriful_sensor.h>
 #include <WiFi_functions.h>
+#include <stdarg.h>
 
 //////////////////////////////////////////////////////////
 // USER-EDITABLE SETTINGS
 
-// The details of the WiFi network:
-char SSID[] = "PUT WIFI NETWORK NAME HERE IN QUOTES"; // network SSID (name)
-char password[] = "PUT WIFI PASSWORD HERE IN QUOTES"; // network password
+// The details of the WiFi network that we will connect to:
+const char * SSID = "PUT WIFI NETWORK NAME HERE"; // network SSID (name)
+const char * password = "PUT WIFI PASSWORD HERE";
 
 // Define the details of variables for monitoring.
 // The seven fields are:
 // {Name, measurement unit, high threshold, low threshold, 
 // initial inactive cycles (2), advice when high, advice when low}
-ThresholdSetting_t humiditySetting = {"humidity","%",60,30,2,
-                   "Reduce moisture sources.","Start the humidifier."};
-ThresholdSetting_t airQualitySetting = {"air quality index","",250,-1,2,
-                   "Improve ventilation and reduce sources of VOCs.",""};
+ThresholdSetting_t humiditySetting = {"humidity", "%", 60, 30, 2,
+                   "Reduce moisture sources.", "Start the humidifier."};
+ThresholdSetting_t airQualitySetting = {"air quality index", "", 150, -1, 2,
+                   "Improve ventilation and reduce sources of VOCs.", ""};
 // Change these values if Fahrenheit output temperature is selected in Metriful_sensor.h
-ThresholdSetting_t temperatureSetting = {"temperature",CELSIUS_SYMBOL,24,18,2,
-                   "Turn on the fan.","Turn on the heating."};
+ThresholdSetting_t temperatureSetting = {"temperature", CELSIUS_SYMBOL, 28, 18, 2,
+                   "Turn on the fan.", "Turn on the heating."};
 
 // An inactive period follows each alert, during which the same alert 
 // will not be generated again - this prevents too many emails/alerts.
 // Choose the period as a number of readout cycles (each 5 minutes) 
-// e.g. for a 2 hour period, choose inactiveWaitCycles = 24
-uint16_t inactiveWaitCycles = 24;
+// e.g. for a 1 hour period, choose inactiveWaitCycles = 12
+uint16_t inactiveWaitCycles = 12;
 
 // IFTTT.com settings
 
 // You must set up a free account on IFTTT.com and create a Webhooks 
 // applet before using this example. This is explained further in the
-// instructions in the GitHub Readme, or in the User Guide.
+// readme.
 
 #define WEBHOOKS_KEY "PASTE YOUR KEY HERE WITHIN QUOTES"
 #define IFTTT_EVENT_NAME "PASTE YOUR EVENT NAME HERE WITHIN QUOTES"
@@ -67,7 +69,7 @@ uint16_t inactiveWaitCycles = 24;
 #endif
 
 // Measure the environment data every 300 seconds (5 minutes). This is 
-// adequate for long-term monitoring.
+// recommended for long-term monitoring.
 uint8_t cycle_period = CYCLE_PERIOD_300_S;
 
 WiFiClient client;
@@ -81,7 +83,8 @@ AirData_t airData = {0};
 AirQualityData_t airQualityData = {0};
 
 
-void setup() {
+void setup()
+{
   // Initialize the host's pins, set up the serial port and reset:
   SensorHardwareSetup(I2C_ADDRESS); 
 
@@ -94,21 +97,24 @@ void setup() {
 }
 
 
-void loop() {
-
+void loop()
+{
   // Wait for the next new data release, indicated by a falling edge on READY
-  while (!ready_assertion_event) {
+  while (!ready_assertion_event)
+  {
     yield();
   }
   ready_assertion_event = false;
 
   // Read the air data and air quality data
   ReceiveI2C(I2C_ADDRESS, AIR_DATA_READ, (uint8_t *) &airData, AIR_DATA_BYTES);
-  ReceiveI2C(I2C_ADDRESS, AIR_QUALITY_DATA_READ, (uint8_t *) &airQualityData, AIR_QUALITY_DATA_BYTES);
+  ReceiveI2C(I2C_ADDRESS, AIR_QUALITY_DATA_READ, (uint8_t *) &airQualityData,
+             AIR_QUALITY_DATA_BYTES);
 
   // Check that WiFi is still connected
   uint8_t wifiStatus = WiFi.status();
-  if (wifiStatus != WL_CONNECTED) {
+  if (wifiStatus != WL_CONNECTED)
+  {
     // There is a problem with the WiFi connection: attempt to reconnect.
     Serial.print("Wifi status: ");
     Serial.println(interpret_WiFi_status(wifiStatus));
@@ -117,7 +123,8 @@ void loop() {
   }
 
   // Process temperature value and convert if using Fahrenheit
-  float temperature = convertEncodedTemperatureToFloat(airData.T_C_int_with_sign, airData.T_C_fr_1dp);
+  float temperature = convertEncodedTemperatureToFloat(airData.T_C_int_with_sign,
+                                                       airData.T_C_fr_1dp);
   #ifdef USE_FAHRENHEIT
     temperature = convertCtoF(temperature);
   #endif
@@ -133,58 +140,69 @@ void loop() {
 // Compare the measured value to the chosen thresholds and create an
 // alert if the value is outside the allowed range. After triggering
 // an alert, it cannot be re-triggered within the chosen number of cycles.
-void checkData(ThresholdSetting_t * setting, int32_t value) {
-
+void checkData(ThresholdSetting_t * setting, int32_t value)
+{
   // Count down to when the monitoring is active again:
-  if (setting->inactiveCount > 0) {
+  if (setting->inactiveCount > 0)
+  {
     setting->inactiveCount--;
   }
 
-  if ((value > setting->thresHigh) && (setting->inactiveCount == 0)) {
+  if ((value > setting->thresHigh) && (setting->inactiveCount == 0))
+  {
     // The variable is above the high threshold
     setting->inactiveCount = inactiveWaitCycles;
     sendAlert(setting, value, true);
   }
-  else if ((value < setting->thresLow) && (setting->inactiveCount == 0)) {
+  else if ((value < setting->thresLow) && (setting->inactiveCount == 0))
+  {
     // The variable is below the low threshold
     setting->inactiveCount = inactiveWaitCycles;
     sendAlert(setting, value, false);
   }
 }
 
+// Create part of the HTTP response in fieldBuffer and append
+// it to postBuffer.
+void appendResponse(const char * format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  vsnprintf(fieldBuffer, sizeof fieldBuffer, format, args);
+  va_end(args);
+  strncat(postBuffer, fieldBuffer, (sizeof postBuffer) - strlen(postBuffer) - 1);
+}
 
 // Send an alert message to IFTTT.com as an HTTP POST request.
 // isOverHighThres = true means (value > thresHigh)
 // isOverHighThres = false means (value < thresLow)
-void sendAlert(ThresholdSetting_t * setting, int32_t value, bool isOverHighThres) {
+void sendAlert(ThresholdSetting_t * setting, int32_t value, bool isOverHighThres)
+{
   client.stop();
-  if (client.connect("maker.ifttt.com", 80)) {
+  if (client.connect("maker.ifttt.com", 80))
+  {
     client.println("POST /trigger/" IFTTT_EVENT_NAME "/with/key/" WEBHOOKS_KEY " HTTP/1.1");
     client.println("Host: maker.ifttt.com");
     client.println("Content-Type: application/json");
 
-    sprintf(fieldBuffer,"The %s is too %s.", setting->variableName,
-                        isOverHighThres ? "high" : "low");
+    snprintf(fieldBuffer, sizeof fieldBuffer, "The %s is too %s.",
+             setting->variableName, isOverHighThres ? "high" : "low");
+    snprintf(postBuffer, sizeof postBuffer, "{\"value1\":\"%s\",", fieldBuffer);
     Serial.print("Sending new alert to IFTTT: ");
     Serial.println(fieldBuffer);
 
-    sprintf(postBuffer,"{\"value1\":\"%s\",", fieldBuffer);
+    appendResponse("\"value2\":\"The measurement was %" PRId32 " %s\"",
+                   value, setting->measurementUnit);
+    appendResponse(",\"value3\":\"%s\"}",
+                   isOverHighThres ? setting->adviceHigh : setting->adviceLow);
 
-    sprintf(fieldBuffer,"\"value2\":\"The measurement was %" PRId32 " %s\"",
-                        value, setting->measurementUnit);
-    strcat(postBuffer, fieldBuffer);
-
-    sprintf(fieldBuffer,",\"value3\":\"%s\"}",
-                        isOverHighThres ? setting->adviceHigh : setting->adviceLow);
-    strcat(postBuffer, fieldBuffer);
-
-    size_t len = strlen(postBuffer);
-    sprintf(fieldBuffer,"Content-Length: %u",len);
+    snprintf(fieldBuffer, sizeof fieldBuffer, "Content-Length: %u", strlen(postBuffer));
     client.println(fieldBuffer);
     client.println();
     client.print(postBuffer);
   }
-  else {
+  else
+  {
     Serial.println("Client connection failed.");
   }
 }

@@ -1,28 +1,30 @@
 /* 
    IoT_cloud_logging.ino
-   
-   Example IoT data logging code for the Metriful MS430. 
-   
+
+   Example IoT data logging code for the Metriful MS430.
+
    This example is designed for the following WiFi enabled hosts:
    * Arduino Nano 33 IoT
    * Arduino MKR WiFi 1010
    * ESP8266 boards (e.g. Wemos D1, NodeMCU)
    * ESP32 boards (e.g. DOIT DevKit v1)
-   
-   Environmental data values are measured and logged to an internet 
-   cloud account every 100 seconds, using a WiFi network. The example 
-   gives the choice of using either the Tago.io or Thingspeak.com 
+   * Raspberry Pi Pico W
+
+   Environmental data values are measured and logged to an internet
+   cloud account every 100 seconds, using a WiFi network. The example
+   gives the choice of using either the Tago.io or Thingspeak.com
    clouds – both of these offer a free account for low data rates.
 
-   Copyright 2020 Metriful Ltd. 
+   Copyright 2020-2023 Metriful Ltd.
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit 
+   For code examples, datasheet and user guide, visit
    https://github.com/metriful/sensor
 */
 
 #include <Metriful_sensor.h>
 #include <WiFi_functions.h>
+#include <stdarg.h>
 
 //////////////////////////////////////////////////////////
 // USER-EDITABLE SETTINGS
@@ -32,25 +34,25 @@
 // be set to 100 or 300 seconds, not 3 seconds.
 uint8_t cycle_period = CYCLE_PERIOD_100_S;
 
-// The details of the WiFi network:
-char SSID[] = "PUT WIFI NETWORK NAME HERE IN QUOTES"; // network SSID (name)
-char password[] = "PUT WIFI PASSWORD HERE IN QUOTES"; // network password
+// The details of the WiFi network that we will connect to:
+const char * SSID = "PUT WIFI NETWORK NAME HERE"; // network SSID (name)
+const char * password = "PUT WIFI PASSWORD HERE";
 
 // IoT cloud settings
 // This example uses the free IoT cloud hosting services provided 
 // by Tago.io or Thingspeak.com
-// Other free cloud providers are available.
 // An account must have been set up with the relevant cloud provider 
-// and a WiFi internet connection must exist. See the accompanying 
-// readme and User Guide for more information.
-
-// The chosen account's key/token must be put into the relevant define below.  
-#define TAGO_DEVICE_TOKEN_STRING "PASTE YOUR TOKEN HERE WITHIN QUOTES"
-#define THINGSPEAK_API_KEY_STRING "PASTE YOUR API KEY HERE WITHIN QUOTES"
+// and a WiFi internet connection must exist. See the readme for
+// more information.
 
 // Choose which provider to use
 bool useTagoCloud = true;
 // To use the ThingSpeak cloud, set: useTagoCloud=false
+
+// The chosen account's key/token must be put into the relevant define below.  
+#define TAGO_DEVICE_TOKEN_STRING "PASTE YOUR TOKEN HERE WITHIN QUOTES"
+// or
+#define THINGSPEAK_API_KEY_STRING "PASTE YOUR API KEY HERE WITHIN QUOTES"
 
 // END OF USER-EDITABLE SETTINGS
 //////////////////////////////////////////////////////////
@@ -62,8 +64,11 @@ bool useTagoCloud = true;
 WiFiClient client;
 
 // Buffers for assembling http POST requests
-char postBuffer[450] = {0};
+char postBuffer[600] = {0};
 char fieldBuffer[70] = {0};
+char valueBuffer[20] = {0};
+
+typedef enum {FIRST, LAST, OTHER} FirstLast;
 
 // Structs for data
 AirData_t airData = {0};
@@ -72,7 +77,8 @@ LightData_t lightData = {0};
 ParticleData_t particleData = {0};
 SoundData_t soundData = {0};
 
-void setup() {
+void setup()
+{
   // Initialize the host's pins, set up the serial port and reset:
   SensorHardwareSetup(I2C_ADDRESS); 
 
@@ -89,23 +95,19 @@ void setup() {
 }
 
 
-void loop() {
-
+void loop()
+{
   // Wait for the next new data release, indicated by a falling edge on READY
-  while (!ready_assertion_event) {
+  while (!ready_assertion_event)
+  {
     yield();
   }
   ready_assertion_event = false;
 
-  /* Read data from the MS430 into the data structs. 
-  For each category of data (air, sound, etc.) a pointer to the data struct is 
-  passed to the ReceiveI2C() function. The received byte sequence fills the 
-  struct in the correct order so that each field within the struct receives
-  the value of an environmental quantity (temperature, sound level, etc.)
-  */ 
+  // Read data from the MS430 into the data structs. 
   
   // Air data
-  // Choose output temperature unit (C or F) in Metriful_sensor.h
+  // You can enable Fahrenheit temperature unit in Metriful_sensor.h
   ReceiveI2C(I2C_ADDRESS, AIR_DATA_READ, (uint8_t *) &airData, AIR_DATA_BYTES);
   
   /* Air quality data
@@ -113,7 +115,8 @@ void loop() {
   minutes to complete. During this time the accuracy parameter is zero 
   and the data values are not valid.
   */ 
-  ReceiveI2C(I2C_ADDRESS, AIR_QUALITY_DATA_READ, (uint8_t *) &airQualityData, AIR_QUALITY_DATA_BYTES);
+  ReceiveI2C(I2C_ADDRESS, AIR_QUALITY_DATA_READ, (uint8_t *) &airQualityData,
+             AIR_QUALITY_DATA_BYTES);
   
   // Light data
   ReceiveI2C(I2C_ADDRESS, LIGHT_DATA_READ, (uint8_t *) &lightData, LIGHT_DATA_BYTES);
@@ -129,13 +132,15 @@ void loop() {
   particle data become valid after an initial initialization 
   period of approximately one minute.
   */ 
-  if (PARTICLE_SENSOR != PARTICLE_SENSOR_OFF) {
+  if (PARTICLE_SENSOR != PARTICLE_SENSOR_OFF)
+  {
     ReceiveI2C(I2C_ADDRESS, PARTICLE_DATA_READ, (uint8_t *) &particleData, PARTICLE_DATA_BYTES);
   }
 
   // Check that WiFi is still connected
   uint8_t wifiStatus = WiFi.status();
-  if (wifiStatus != WL_CONNECTED) {
+  if (wifiStatus != WL_CONNECTED)
+  {
     // There is a problem with the WiFi connection: attempt to reconnect.
     Serial.print("Wifi status: ");
     Serial.println(interpret_WiFi_status(wifiStatus));
@@ -144,10 +149,12 @@ void loop() {
   }
 
   // Send data to the cloud
-  if (useTagoCloud) {
+  if (useTagoCloud)
+  {
     http_POST_data_Tago_cloud();
   }
-  else {
+  else
+  {
     http_POST_data_Thingspeak_cloud();
   }
 }
@@ -163,122 +170,125 @@ void loop() {
 7 Illuminance/lux
 8 Particle concentration
   
-   Additionally, for Tago, the following is sent:
+   Additionally, for Tago, the following are sent:
 9  Air Quality Assessment summary (Good, Bad, etc.) 
 10 Peak sound amplitude / mPa
 */ 
 
+// Add the field for a single data variable to the Tago HTTP response in
+// the postBuffer.
+void addTagoVariable(FirstLast firstLast, const char * variableName,
+                     const char * valueFormat, ...)
+{
+  va_list args;
+  va_start(args, valueFormat);
+  vsnprintf(valueBuffer, sizeof valueBuffer, valueFormat, args);
+  va_end(args);
+  const char * fieldFormat;
+  switch (firstLast)
+  {
+    case FIRST:
+        postBuffer[0] = 0;
+        fieldFormat = "[{\"variable\":\"%s\",\"value\":%s},";
+        break;
+    case LAST:
+        fieldFormat = "{\"variable\":\"%s\",\"value\":%s}]";
+        break;
+    case OTHER: default:
+        fieldFormat = "{\"variable\":\"%s\",\"value\":%s},";
+  }
+  snprintf(fieldBuffer, sizeof fieldBuffer, fieldFormat, variableName, valueBuffer);
+  strncat(postBuffer, fieldBuffer, (sizeof postBuffer) - strlen(postBuffer) - 1);
+}
+
 // Assemble the data into the required format, then send it to the
 // Tago.io cloud as an HTTP POST request.
-void http_POST_data_Tago_cloud(void) {
+void http_POST_data_Tago_cloud(void)
+{
   client.stop();
-  if (client.connect("api.tago.io", 80)) {
+  if (client.connect("api.tago.io", 80))
+  {
     client.println("POST /data HTTP/1.1");
     client.println("Host: api.tago.io");
     client.println("Content-Type: application/json");
     client.println("Device-Token: " TAGO_DEVICE_TOKEN_STRING);
-    
+
     uint8_t T_intPart = 0;
     uint8_t T_fractionalPart = 0;
     bool isPositive = true;
     getTemperature(&airData, &T_intPart, &T_fractionalPart, &isPositive);
-    sprintf(postBuffer,"[{\"variable\":\"temperature\",\"value\":%s%u.%u}",
-                         isPositive?"":"-", T_intPart, T_fractionalPart);
-    
-    sprintf(fieldBuffer,",{\"variable\":\"pressure\",\"value\":%" PRIu32 "}", airData.P_Pa);
-    strcat(postBuffer, fieldBuffer);
-    
-    sprintf(fieldBuffer,",{\"variable\":\"humidity\",\"value\":%u.%u}", 
-            airData.H_pc_int, airData.H_pc_fr_1dp);
-    strcat(postBuffer, fieldBuffer);
-    
-    sprintf(fieldBuffer,",{\"variable\":\"aqi\",\"value\":%u.%u}", 
-            airQualityData.AQI_int, airQualityData.AQI_fr_1dp);
-    strcat(postBuffer, fieldBuffer);
-    
-    sprintf(fieldBuffer,",{\"variable\":\"aqi_string\",\"value\":\"%s\"}", 
-            interpret_AQI_value(airQualityData.AQI_int));
-    strcat(postBuffer, fieldBuffer);
-    
-    sprintf(fieldBuffer,",{\"variable\":\"bvoc\",\"value\":%u.%02u}", 
-            airQualityData.bVOC_int, airQualityData.bVOC_fr_2dp);
-    strcat(postBuffer, fieldBuffer);
-    
-    sprintf(fieldBuffer,",{\"variable\":\"spl\",\"value\":%u.%u}", 
-            soundData.SPL_dBA_int, soundData.SPL_dBA_fr_1dp);
-    strcat(postBuffer, fieldBuffer);
 
-    sprintf(fieldBuffer,",{\"variable\":\"peak_amp\",\"value\":%u.%02u}", 
-            soundData.peak_amp_mPa_int, soundData.peak_amp_mPa_fr_2dp);
-    strcat(postBuffer, fieldBuffer);
+    addTagoVariable(FIRST, "temperature", "%s%u.%u", isPositive ? "" : "-", T_intPart,
+                    T_fractionalPart);
+    addTagoVariable(OTHER, "pressure", "%" PRIu32, airData.P_Pa);
+    addTagoVariable(OTHER, "humidity", "%u.%u", airData.H_pc_int, airData.H_pc_fr_1dp);
+    addTagoVariable(OTHER, "aqi", "%u.%u", airQualityData.AQI_int, airQualityData.AQI_fr_1dp);
+    addTagoVariable(OTHER, "aqi_string", "\"%s\"", interpret_AQI_value(airQualityData.AQI_int));
+    addTagoVariable(OTHER, "bvoc", "%u.%02u", airQualityData.bVOC_int, airQualityData.bVOC_fr_2dp);
+    addTagoVariable(OTHER, "spl", "%u.%u", soundData.SPL_dBA_int, soundData.SPL_dBA_fr_1dp);
+    addTagoVariable(OTHER, "peak_amp", "%u.%02u", soundData.peak_amp_mPa_int,
+                    soundData.peak_amp_mPa_fr_2dp);
+    addTagoVariable(OTHER, "particulates", "%u.%02u", particleData.concentration_int,
+                    particleData.concentration_fr_2dp);
+    addTagoVariable(LAST, "illuminance", "%u.%02u", lightData.illum_lux_int,
+                    lightData.illum_lux_fr_2dp);
 
-    sprintf(fieldBuffer,",{\"variable\":\"particulates\",\"value\":%u.%02u}", 
-            particleData.concentration_int, particleData.concentration_fr_2dp);
-    strcat(postBuffer, fieldBuffer);
-    
-    sprintf(fieldBuffer,",{\"variable\":\"illuminance\",\"value\":%u.%02u}]", 
-            lightData.illum_lux_int, lightData.illum_lux_fr_2dp);
-    strcat(postBuffer, fieldBuffer);
-    
-    size_t len = strlen(postBuffer);
-    sprintf(fieldBuffer,"Content-Length: %u",len);  
+    snprintf(fieldBuffer, sizeof fieldBuffer, "Content-Length: %u", strlen(postBuffer));
     client.println(fieldBuffer);
     client.println();
     client.print(postBuffer);
   }
-  else {
+  else
+  {
     Serial.println("Client connection failed.");
   }
 }
 
+// Add the field for a single data variable to the Thingspeak HTTP
+// response in the postBuffer.
+void addThingspeakVariable(uint8_t fieldNumber, const char * valueFormat, ...)
+{
+  va_list args;
+  va_start(args, valueFormat);
+  vsnprintf(valueBuffer, sizeof valueBuffer, valueFormat, args);
+  va_end(args);
+  snprintf(fieldBuffer, sizeof fieldBuffer, "&field%u=%s", fieldNumber, valueBuffer);
+  strncat(postBuffer, fieldBuffer, (sizeof postBuffer) - strlen(postBuffer) - 1);
+}
 
 // Assemble the data into the required format, then send it to the
 // Thingspeak.com cloud as an HTTP POST request.
-void http_POST_data_Thingspeak_cloud(void) {
+void http_POST_data_Thingspeak_cloud(void)
+{
   client.stop();
-  if (client.connect("api.thingspeak.com", 80)) { 
+  if (client.connect("api.thingspeak.com", 80))
+  { 
     client.println("POST /update HTTP/1.1");
     client.println("Host: api.thingspeak.com");
     client.println("Content-Type: application/x-www-form-urlencoded");
-    
-    strcpy(postBuffer,"api_key=" THINGSPEAK_API_KEY_STRING);
-    
+
     uint8_t T_intPart = 0;
     uint8_t T_fractionalPart = 0;
     bool isPositive = true;
     getTemperature(&airData, &T_intPart, &T_fractionalPart, &isPositive);
-    sprintf(fieldBuffer,"&field1=%s%u.%u", isPositive?"":"-", T_intPart, T_fractionalPart);
-    strcat(postBuffer, fieldBuffer);
     
-    sprintf(fieldBuffer,"&field2=%" PRIu32, airData.P_Pa);
-    strcat(postBuffer, fieldBuffer);
-    
-    sprintf(fieldBuffer,"&field3=%u.%u", airData.H_pc_int, airData.H_pc_fr_1dp);
-    strcat(postBuffer, fieldBuffer);
-    
-    sprintf(fieldBuffer,"&field4=%u.%u", airQualityData.AQI_int, airQualityData.AQI_fr_1dp);
-    strcat(postBuffer, fieldBuffer);
-    
-    sprintf(fieldBuffer,"&field5=%u.%02u", airQualityData.bVOC_int, airQualityData.bVOC_fr_2dp);
-    strcat(postBuffer, fieldBuffer);
-    
-    sprintf(fieldBuffer,"&field6=%u.%u", soundData.SPL_dBA_int, soundData.SPL_dBA_fr_1dp);
-    strcat(postBuffer, fieldBuffer);
-    
-    sprintf(fieldBuffer,"&field7=%u.%02u", lightData.illum_lux_int, lightData.illum_lux_fr_2dp);
-    strcat(postBuffer, fieldBuffer);
-    
-    sprintf(fieldBuffer,"&field8=%u.%02u", particleData.concentration_int, 
-                                           particleData.concentration_fr_2dp);
-    strcat(postBuffer, fieldBuffer);
-    
-    size_t len = strlen(postBuffer);
-    sprintf(fieldBuffer,"Content-Length: %u",len);  
+    snprintf(postBuffer, sizeof postBuffer, "%s", "api_key=" THINGSPEAK_API_KEY_STRING);
+    addThingspeakVariable(1, "%s%u.%u", isPositive ? "" : "-", T_intPart, T_fractionalPart);
+    addThingspeakVariable(2, "%" PRIu32, airData.P_Pa);
+    addThingspeakVariable(3, "%u.%u", airData.H_pc_int, airData.H_pc_fr_1dp);
+    addThingspeakVariable(4, "%u.%u", airQualityData.AQI_int, airQualityData.AQI_fr_1dp);
+    addThingspeakVariable(5, "%u.%02u", airQualityData.bVOC_int, airQualityData.bVOC_fr_2dp);
+    addThingspeakVariable(6, "%u.%u", soundData.SPL_dBA_int, soundData.SPL_dBA_fr_1dp);
+    addThingspeakVariable(7, "%u.%02u", lightData.illum_lux_int, lightData.illum_lux_fr_2dp);
+    addThingspeakVariable(8, "%u.%02u", particleData.concentration_int,
+                          particleData.concentration_fr_2dp);
+    snprintf(fieldBuffer, sizeof fieldBuffer, "Content-Length: %u", strlen(postBuffer));
     client.println(fieldBuffer); 
     client.println(); 
     client.print(postBuffer);
   }
-  else {
+  else
+  {
     Serial.println("Client connection failed.");
   }
 }

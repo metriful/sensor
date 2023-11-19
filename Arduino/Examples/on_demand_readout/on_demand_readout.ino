@@ -1,16 +1,16 @@
 /* 
    on_demand_readout.ino
 
-   Example code for using the Metriful MS430 in "on-demand" mode. 
-   
+   Example code for using the Metriful MS430 in "on-demand" mode.
+
    Repeatedly measures and displays all environment data, with a pause
-   between measurements. Air quality data are unavailable in this mode 
+   between measurements. Air quality data are unavailable in this mode
    (instead see cycle_readout.ino). View output in the Serial Monitor.
 
-   Copyright 2020 Metriful Ltd. 
+   Copyright 2020-2023 Metriful Ltd.
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit 
+   For code examples, datasheet and user guide, visit
    https://github.com/metriful/sensor
 */
 
@@ -21,8 +21,8 @@
 
 // Pause (in milliseconds) between data measurements (note that the
 // measurement itself takes 0.5 seconds)
-uint32_t pause_ms = 4500;
-// Choosing a pause of less than 2000 ms will cause inaccurate 
+uint32_t pause_ms = 2500;
+// Choosing a pause of less than about 2000 ms will cause inaccurate 
 // temperature, humidity and particle data.
 
 // How to print the data over the serial port. If printDataAsColumns = true,
@@ -40,7 +40,8 @@ SoundData_t soundData = {0};
 ParticleData_t particleData = {0};
 
 
-void setup() {  
+void setup()
+{  
   // Initialize the host pins, set up the serial port and reset:
   SensorHardwareSetup(I2C_ADDRESS); 
   
@@ -48,20 +49,22 @@ void setup() {
   TransmitI2C(I2C_ADDRESS, PARTICLE_SENSOR_SELECT_REG, &particleSensor, 1);
 
   // Wait for the serial port to be ready, for displaying the output
-  while (!Serial) {
+  while (!Serial)
+  {
     yield();
   } 
 }
 
 
-void loop() {
-
+void loop()
+{
   // Trigger a new measurement
   ready_assertion_event = false;
   TransmitI2C(I2C_ADDRESS, ON_DEMAND_MEASURE_CMD, 0, 0);
 
   // Wait for the measurement to finish, indicated by a falling edge on READY
-  while (!ready_assertion_event) {
+  while (!ready_assertion_event)
+  {
     yield();
   }
   
@@ -87,7 +90,8 @@ void loop() {
   particle data become valid after an initial initialization 
   period of approximately one minute.
   */ 
-  if (PARTICLE_SENSOR != PARTICLE_SENSOR_OFF) {
+  if (PARTICLE_SENSOR != PARTICLE_SENSOR_OFF)
+  {
     particleData = getParticleData(I2C_ADDRESS);
   }
 
@@ -95,7 +99,8 @@ void loop() {
   printAirData(&airData, printDataAsColumns);
   printLightData(&lightData, printDataAsColumns);
   printSoundData(&soundData, printDataAsColumns);
-  if (PARTICLE_SENSOR != PARTICLE_SENSOR_OFF) {
+  if (PARTICLE_SENSOR != PARTICLE_SENSOR_OFF)
+  {
     printParticleData(&particleData, printDataAsColumns, PARTICLE_SENSOR);
   }
   Serial.println();

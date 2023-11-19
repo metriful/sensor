@@ -1,6 +1,16 @@
 # Change Log
 All notable changes to the project software and documentation will be documented in this file.
 
+## [3.2.0] - 2023-11-19
+### Added
+- Support for Raspberry Pi Pico (W)
+- ESPHome support for Home Assistant
+
+### Changed
+- Swap SDA and SCL pin definitions for ESP8266 in host_pin_definitions.h to match the standard defaults.
+- Improve web page formatting and introduce jinja2 templating in Python.
+- Improve string formatting in Arduino code.
+
 ## [3.1.0] - 2020-11-16
 ### Added
 - Fahrenheit temperature output.

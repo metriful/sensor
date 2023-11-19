@@ -1,29 +1,30 @@
-/* 
-   host_pin_definitions.h
+/*
+  host_pin_definitions.h
 
-   This file defines which host pins are used to interface to the 
-   Metriful MS430 board. The relevant file section is selected 
-   automatically when the board is chosen in the Arduino IDE.
+  This file defines which host pins are used to interface to the
+  Metriful MS430 board. The relevant file section is selected
+  automatically when the board is chosen in the Arduino IDE.
 
-   More detail is provided in the readme and User Guide.
+  More detail is provided in the readme.
 
-   This file provides settings for the following host systems:
-   * Arduino Uno
-   * Arduino Nano 33 IoT
-   * Arduino Nano
-   * Arduino MKR WiFi 1010
-   * ESP8266 (tested on NodeMCU and Wemos D1 Mini - other boards may require changes)
-   * ESP32 (tested on DOIT ESP32 DEVKIT V1 - other boards may require changes)
+  This file provides settings for the following host systems:
+  * Arduino Uno
+  * Arduino Nano 33 IoT
+  * Arduino Nano
+  * Arduino MKR WiFi 1010
+  * ESP8266 (tested on NodeMCU and Wemos D1 Mini - other boards may require changes)
+  * ESP32 (tested on DOIT ESP32 DEVKIT V1 - other boards may require changes)
+  * Raspberry Pi Pico (including WiFi version)
 
-   The Metriful MS430 is compatible with many more development boards
-   than those listed. You can use this file as a guide to define the
-   necessary settings for other host systems.
+  The Metriful MS430 is compatible with many more development boards
+  than those listed. You can use this file as a guide to define the
+  necessary settings for other host systems.
 
-   Copyright 2020 Metriful Ltd. 
-   Licensed under the MIT License - for further details see LICENSE.txt
+  Copyright 2020-2023 Metriful Ltd.
+  Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit 
-   https://github.com/metriful/sensor
+  For code examples, datasheet and user guide, visit
+  https://github.com/metriful/sensor
 */
 
 #ifndef ARDUINO_PIN_DEFINITIONS_H
@@ -57,7 +58,7 @@
 #elif defined ARDUINO_SAMD_NANO_33_IOT
 
   // Arduino Nano 33 IoT
-  
+
   #include <SPI.h>
   #include <WiFiNINA.h>
   #define HAS_WIFI
@@ -151,10 +152,10 @@
 
   #include <ESP8266WiFi.h>
   #define HAS_WIFI
-  #define ISR_ATTRIBUTE ICACHE_RAM_ATTR
+  #define ISR_ATTRIBUTE IRAM_ATTR
 
-  #define SDA_PIN 5     // GPIO5  (labeled D1) connects to SDA
-  #define SCL_PIN 4     // GPIO4  (labeled D2) connects to SCL
+  #define SDA_PIN 4     // GPIO4  (labeled D2) connects to SDA
+  #define SCL_PIN 5     // GPIO5  (labeled D1) connects to SCL
   #define READY_PIN 12  // GPIO12 (labeled D6) connects to RDY
   #define L_INT_PIN 0   // GPIO0  (labeled D3) connects to LIT
   #define S_INT_PIN 14  // GPIO14 (labeled D5) connects to SIT
@@ -204,9 +205,42 @@
   SDS011 pin "25um" to MS430 pin PRT
   */
 
+#elif defined ARDUINO_ARCH_RP2040
+
+  // The examples have been tested on the official Raspberry Pi Pico and
+  // Pico W development boards. Other Pico/RP2040 boards may require changes.
+
+  #ifdef ARDUINO_RASPBERRY_PI_PICO_W
+    #include <WiFi.h>
+    #define HAS_WIFI
+  #endif
+
+  #define ISR_ATTRIBUTE
+  #define SDA_PIN 20    // GP20 (Pin 26) connects to SDA
+  #define SCL_PIN 21    // GP21 (Pin 27) connects to SCL
+  #define READY_PIN 28  // GP28 (Pin 34) connects to RDY
+  #define L_INT_PIN 26  // GP26 (Pin 31) connects to LIT
+  #define S_INT_PIN 27  // GP27 (Pin 32) connects to SIT
+  /* Also make the following connections:
+  MS430 pin GND to any of the Pico GND pins
+  Pico pin 36 to MS430 pins VPU and VDD
+  MS430 pin VIN is unused
+
+  If a PPD42 particle sensor is used, also connect the following:
+  Pico pin 40 to PPD42 pin 3
+  PPD42 pin 1 to any of the Pico GND pins
+  PPD42 pin 4 to MS430 pin PRT
+
+  If an SDS011 particle sensor is used, connect the following:
+  Pico pin 40 to SDS011 pin "5V"
+  SDS011 pin "GND" to any of the Pico GND pins
+  SDS011 pin "25um" to MS430 pin PRT
+  */
+
 #else
-  #error ("Your development board is not directly supported")
-  // Please make a new section in this file to define the correct input/output pins
+  #error ("Your development board is not yet supported.")
+  // Please make a new section in this file to define
+  // the correct input/output pins.
 #endif
 
 #endif

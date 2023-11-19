@@ -1,14 +1,14 @@
-/* 
-   WiFi_functions.h
+/*
+  WiFi_functions.h
 
-   This file declares functions used by examples connecting to, 
-   or creating, a WiFi network.
-   
-   Copyright 2020 Metriful Ltd. 
-   Licensed under the MIT License - for further details see LICENSE.txt
+  This file declares functions used by examples connecting to,
+  or creating, a WiFi network.
 
-   For code examples, datasheet and user guide, visit 
-   https://github.com/metriful/sensor
+  Copyright 2020-2023 Metriful Ltd.
+  Licensed under the MIT License - for further details see LICENSE.txt
+
+  For code examples, datasheet and user guide, visit
+  https://github.com/metriful/sensor
 */
 
 #include "host_pin_definitions.h"
@@ -19,8 +19,14 @@
 #include <stdint.h>
 
 void connectToWiFi(const char * SSID, const char * password);
-bool createWiFiAP(const char * SSID, const char * password, IPAddress hostIP);
+bool createWiFiAP(const char * SSID, const char * password,
+                  IPAddress hostIP);
 const char * interpret_WiFi_status(uint8_t statusCode);
+IPAddress getIPaddress(bool isAccessPoint);
+bool wifiCreateOrConnect(bool createWifiNetwork, bool waitForSerial,
+                         const char * SSID, const char * password,
+                         IPAddress hostIP);
+WiFiClient getClient(WiFiServer * server);
 
 #endif
 #endif

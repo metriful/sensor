@@ -1,27 +1,28 @@
-#  sensor_constants.py
+"""Constant values for use in Python programs.
 
-#  This file defines constant values which are used in the control 
-#  of the Metriful MS430 board and the interpretation of its output data.
-#  All values have been taken from the MS430 datasheet.
+This file defines constant values which are used in the control
+of the Metriful MS430 board and the interpretation of its output data.
+All values have been taken from the MS430 datasheet.
+"""
 
-#  Copyright 2020 Metriful Ltd. 
+#  Copyright 2020-2023 Metriful Ltd.
 #  Licensed under the MIT License - for further details see LICENSE.txt
 
-#  For code examples, datasheet and user guide, visit 
+#  For code examples, datasheet and user guide, visit
 #  https://github.com/metriful/sensor
 
 # Settings registers
-PARTICLE_SENSOR_SELECT_REG = 0x07 
-LIGHT_INTERRUPT_ENABLE_REG = 0x81     
-LIGHT_INTERRUPT_THRESHOLD_REG = 0x82  
-LIGHT_INTERRUPT_TYPE_REG = 0x83       
-LIGHT_INTERRUPT_POLARITY_REG = 0x84   
-SOUND_INTERRUPT_ENABLE_REG = 0x85     
-SOUND_INTERRUPT_THRESHOLD_REG = 0x86  
-SOUND_INTERRUPT_TYPE_REG = 0x87       
-CYCLE_TIME_PERIOD_REG = 0x89 
+PARTICLE_SENSOR_SELECT_REG = 0x07
+LIGHT_INTERRUPT_ENABLE_REG = 0x81
+LIGHT_INTERRUPT_THRESHOLD_REG = 0x82
+LIGHT_INTERRUPT_TYPE_REG = 0x83
+LIGHT_INTERRUPT_POLARITY_REG = 0x84
+SOUND_INTERRUPT_ENABLE_REG = 0x85
+SOUND_INTERRUPT_THRESHOLD_REG = 0x86
+SOUND_INTERRUPT_TYPE_REG = 0x87
+CYCLE_TIME_PERIOD_REG = 0x89
 
-# Executable commands 
+# Executable commands
 ON_DEMAND_MEASURE_CMD = 0xE1
 RESET_CMD = 0xE2
 CYCLE_MODE_CMD = 0xE4
@@ -30,9 +31,9 @@ LIGHT_INTERRUPT_CLR_CMD = 0xE6
 SOUND_INTERRUPT_CLR_CMD = 0xE7
 
 # Read the operational mode
-OP_MODE_READ = 0x8A         
+OP_MODE_READ = 0x8A
 
-# Read data for whole categories 
+# Read data for whole categories
 AIR_DATA_READ = 0x10
 AIR_QUALITY_DATA_READ = 0x11
 LIGHT_DATA_READ = 0x12
@@ -62,7 +63,7 @@ PARTICLE_VALID_READ = 0x53
 
 # I2C address of sensor board: can select using solder bridge
 I2C_ADDR_7BIT_SB_OPEN = 0x71   # if solder bridge is left open
-I2C_ADDR_7BIT_SB_CLOSED = 0x70 # if solder bridge is soldered closed
+I2C_ADDR_7BIT_SB_CLOSED = 0x70  # if solder bridge is soldered closed
 
 # Values for enabling/disabling of sensor functions
 ENABLED = 1
@@ -90,7 +91,7 @@ SOUND_INT_TYPE_LATCH = 0
 SOUND_INT_TYPE_COMP = 1
 
 # Maximum for illuminance measurement and threshold setting
-MAX_LUX_VALUE = 3774 
+MAX_LUX_VALUE = 3774
 
 # Light interrupt type
 LIGHT_INT_TYPE_LATCH = 0
@@ -101,8 +102,8 @@ LIGHT_INT_POL_POSITIVE = 0
 LIGHT_INT_POL_NEGATIVE = 1
 
 # Decoding the temperature integer.fraction value format
-TEMPERATURE_VALUE_MASK = 0x7F 
-TEMPERATURE_SIGN_MASK = 0x80 
+TEMPERATURE_VALUE_MASK = 0x7F
+TEMPERATURE_SIGN_MASK = 0x80
 
 # Particle sensor module selection:
 PARTICLE_SENSOR_OFF = 0
@@ -139,3 +140,12 @@ DUTY_CYCLE_BYTES = 2
 CONCENTRATION_BYTES = 3
 PARTICLE_VALID_BYTES = 1
 PARTICLE_DATA_BYTES = 6
+
+#############################################################################
+
+# Unicode symbol strings
+CELSIUS_SYMBOL = "°C"
+FAHRENHEIT_SYMBOL = "°F"
+SDS011_CONC_SYMBOL = "µg/m³"  # micrograms per cubic meter
+SUBSCRIPT_2 = "₂"
+OHM_SYMBOL = "Ω"

@@ -1,18 +1,18 @@
 /* 
    interrupts.ino
 
-   Example code for using the Metriful MS430 interrupt outputs. 
-   
-   Light and sound interrupts are configured and the program then 
+   Example code for using the Metriful MS430 interrupt outputs.
+
+   Light and sound interrupts are configured and the program then
    waits forever. When an interrupt occurs, a message prints over
-   the serial port, the interrupt is cleared (if set to latch type), 
-   and the program returns to waiting. 
+   the serial port, the interrupt is cleared (if set to latch type),
+   and the program returns to waiting.
    View the output in the Serial Monitor.
 
-   Copyright 2020 Metriful Ltd. 
+   Copyright 2020-2023 Metriful Ltd.
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit 
+   For code examples, datasheet and user guide, visit
    https://github.com/metriful/sensor
 */
 
@@ -36,7 +36,6 @@ uint8_t light_int_thres_lux_f2dp = 50;
 //     light_int_thres_lux_i = 56
 //     light_int_thres_lux_f2dp = 12 
 
-
 // Sound level interrupt settings
 
 bool enableSoundInterrupts = true;
@@ -48,27 +47,32 @@ uint16_t sound_thres_mPa = 100;
 
 uint8_t transmit_buffer[1] = {0};
 
-
-void setup() {  
+void setup()
+{  
   // Initialize the host pins, set up the serial port and reset
   SensorHardwareSetup(I2C_ADDRESS); 
   
   // check that the chosen light threshold is a valid value 
-  if (light_int_thres_lux_i > MAX_LUX_VALUE) {
+  if (light_int_thres_lux_i > MAX_LUX_VALUE)
+  {
     Serial.println("The chosen light interrupt threshold exceeds the maximum allowed value.");
-    while (true) {
+    while (true)
+    {
       yield();
     }
   }
 
-  if ((!enableSoundInterrupts)&&(!enableLightInterrupts)) {
+  if ((!enableSoundInterrupts) && (!enableLightInterrupts))
+  {
     Serial.println("No interrupts have been selected.");
-    while (true) {
+    while (true)
+    {
       yield();
     }
   }
   
-  if (enableSoundInterrupts) {
+  if (enableSoundInterrupts)
+  {
     // Set the interrupt type (latch or comparator)
     transmit_buffer[0] = sound_int_type;
     TransmitI2C(I2C_ADDRESS, SOUND_INTERRUPT_TYPE_REG, transmit_buffer, 1);
@@ -81,7 +85,8 @@ void setup() {
     TransmitI2C(I2C_ADDRESS, SOUND_INTERRUPT_ENABLE_REG, transmit_buffer, 1);
   }
 
-  if (enableLightInterrupts) {
+  if (enableLightInterrupts)
+  {
     // Set the interrupt type (latch or comparator)
     transmit_buffer[0] = light_int_type;
     TransmitI2C(I2C_ADDRESS, LIGHT_INTERRUPT_TYPE_REG, transmit_buffer, 1);
@@ -99,7 +104,8 @@ void setup() {
   }
 
   // Wait for the serial port to be ready, for displaying the output
-  while (!Serial) {
+  while (!Serial)
+  {
     yield();
   } 
 
@@ -108,21 +114,26 @@ void setup() {
 }
 
 
-void loop() {
+void loop()
+{
 
   // Check whether a light interrupt has occurred
-  if ((digitalRead(L_INT_PIN) == LOW) && enableLightInterrupts) {
+  if ((digitalRead(L_INT_PIN) == LOW) && enableLightInterrupts)
+  {
     Serial.println("LIGHT INTERRUPT.");
-    if (light_int_type == LIGHT_INT_TYPE_LATCH) {
+    if (light_int_type == LIGHT_INT_TYPE_LATCH)
+    {
       // Latch type interrupts remain set until cleared by command
       TransmitI2C(I2C_ADDRESS, LIGHT_INTERRUPT_CLR_CMD, 0, 0);
     }
   }
   
   // Check whether a sound interrupt has occurred   
-  if ((digitalRead(S_INT_PIN) == LOW) && enableSoundInterrupts) {
+  if ((digitalRead(S_INT_PIN) == LOW) && enableSoundInterrupts)
+  {
     Serial.println("SOUND INTERRUPT.");
-    if (sound_int_type == SOUND_INT_TYPE_LATCH) {
+    if (sound_int_type == SOUND_INT_TYPE_LATCH)
+    {
       // Latch type interrupts remain set until cleared by command
       TransmitI2C(I2C_ADDRESS, SOUND_INTERRUPT_CLR_CMD, 0, 0);
     }

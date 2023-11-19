@@ -1,29 +1,31 @@
 /* 
    simple_read_T_H.ino
 
-   Example code for using the Metriful MS430 to measure humidity 
-   and temperature. 
-   
-   Demonstrates multiple ways of reading and displaying the temperature 
-   and humidity data. View the output in the Serial Monitor. The other 
+   Example code for using the Metriful MS430 to measure humidity
+   and temperature.
+
+   Demonstrates multiple ways of reading and displaying the temperature
+   and humidity data. View the output in the Serial Monitor. The other
    data can be measured and displayed in a similar way.
 
-   Copyright 2020 Metriful Ltd. 
+   Copyright 2020-2023 Metriful Ltd.
    Licensed under the MIT License - for further details see LICENSE.txt
 
-   For code examples, datasheet and user guide, visit 
+   For code examples, datasheet and user guide, visit
    https://github.com/metriful/sensor
 */
 
 #include <Metriful_sensor.h>
 
 
-void setup() {
+void setup()
+{
   // Initialize the host pins, set up the serial port and reset:
   SensorHardwareSetup(I2C_ADDRESS); 
   
   // Wait for the serial port to be ready, for displaying the output
-  while (!Serial) {
+  while (!Serial)
+  {
     yield();
   } 
   
@@ -34,7 +36,8 @@ void setup() {
   TransmitI2C(I2C_ADDRESS, ON_DEMAND_MEASURE_CMD, 0, 0);
 
   // Now wait for the ready signal before continuing
-  while (!ready_assertion_event) {
+  while (!ready_assertion_event)
+  {
     yield();
   }
 
@@ -59,7 +62,7 @@ void setup() {
 
 
   // 2. After reading from the MS430, you can also access and print the 
-  // float data directly from the struct:
+  // float data directly from the float struct:
   Serial.print("The temperature is: ");
   Serial.print(airDataF.T_C, 1);   // print to 1 decimal place
   Serial.println(" " CELSIUS_SYMBOL);
@@ -87,7 +90,7 @@ void setup() {
   Serial.println("-----------------------------");
   
   
-  // 4. Access and print integer data directly from the struct:
+  // 4. Access and print integer data directly from the integer struct:
   Serial.print("The humidity is: ");
   Serial.print(airData.H_pc_int);    // the integer part of the value
   Serial.print(".");                 // the decimal point
@@ -134,7 +137,8 @@ void setup() {
   Serial.print("Temperature = ");
   // If the most-significant bit of the first byte is a 1, the temperature 
   // is negative (below 0 C), otherwise it is positive
-  if ((receive_buffer[0] & TEMPERATURE_SIGN_MASK) != 0) {
+  if ((receive_buffer[0] & TEMPERATURE_SIGN_MASK) != 0)
+  {
     // The bit is a 1: celsius temperature is negative
     Serial.print("-");
   }
@@ -145,6 +149,7 @@ void setup() {
 
 }
 
-void loop() {
+void loop()
+{
   // There is no loop for this program.
 }

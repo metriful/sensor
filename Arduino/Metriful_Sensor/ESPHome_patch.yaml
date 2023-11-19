@@ -1,0 +1,39 @@
+# Use the MS430 with ESPHome by adding this file to your yaml 
+# device configuration file.
+
+# Replace the "esphome:" section in your wizard-generated yaml file
+# with the entire contents of this file and then edit the
+# three substitutions.
+
+# "device_name" identifies the microcontroller board.
+
+# "friendly_name" is prepended to each sensor name and displayed by
+# default on dashboard cards in Home Assistant. These default names
+# can be overridden manually with new names in Home Assistant.
+
+substitutions:
+  device_name: put_your_device_name_here
+  friendly_name: " "  # Prefer a space here to leave the sensor names unchanged
+  temperature_offset: "0.0"  # Optional adjustment for temperature sensor
+
+# The optional particle sensor is configured in Metriful_sensor.h
+# Temperature is always sent to Home Assistant as Celsius and can
+# be displayed there as Fahrenheit if required.
+
+# The file below this line should not require any edits.
+###############################################################################
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  includes:
+    - sensor_constants.h
+    - host_pin_definitions.h
+    - Metriful_sensor.h
+    - MS430_ESPHome.h
+    - Metriful_sensor.cpp
+  libraries:
+    - Wire
+
+# MS430 configuration
+<<: !include MS430_ESPHome.yaml
