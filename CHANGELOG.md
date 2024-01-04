@@ -1,6 +1,10 @@
 # Change Log
 All notable changes to the project software and documentation will be documented in this file.
 
+## [3.2.1] - 2024-01-04
+### Fixed
+- Wiring table for ESP8266 in README.md had incorrect SCL and SDA pin identification (D and GPIO numbers).
+
 ## [3.2.0] - 2023-11-19
 ### Added
 - Support for Raspberry Pi Pico (W)

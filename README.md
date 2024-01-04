@@ -231,8 +231,8 @@ Note that steps 1 and 2 are already complete if you have used Arduino IDE before
 |        VDD      |       3V3            |
 |        GND      |       GND            | 
 |        VPU      |       3V3            | 
-|        SCL      |    D2 (GPIO 4)       |
-|        SDA      |    D1 (GPIO 5)       |
+|        SCL      |    D1 (GPIO 5)       |
+|        SDA      |    D2 (GPIO 4)       |
 |        LIT      |    D3 (GPIO 0)       |
 |        SIT      |    D5 (GPIO 14)      |
 |        RDY      |    D6 (GPIO 12)      |
