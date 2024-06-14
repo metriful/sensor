@@ -31,11 +31,11 @@ Most problems can be resolved by following these steps:
 ## Edge detection error
 
 The Python examples running on Raspberry Pi may cause a ```Failed to add edge detection``` runtime error. This happens in the "Bookworm" version of Raspberry Pi OS, due to a problem with the old GPIO library. It may also occur in future OS versions. The simple fix is to install the new improved GPIO library by running the following:
-	```
-	sudo apt remove python3-rpi.gpio
-	sudo apt update
-	sudo apt install python3-rpi-lgpio
-	```
+```
+sudo apt remove python3-rpi.gpio
+sudo apt update
+sudo apt install python3-rpi-lgpio
+```
 
 
 ## WiFi Access Point examples not starting
