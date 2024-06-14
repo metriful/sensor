@@ -6,6 +6,7 @@ This file lists solutions for some common problems. Please check it before openi
 
 ### Contents
 **[Standard checks](#standard-checks)**<br>
+**[RuntimeError: Failed to add edge detection](#edge-detection-error)**<br>
 **[WiFi Access Point examples not starting](#wifi-access-point-examples-not-starting)**<br>
 **[ESP8266 problems](#esp8266-problems)**<br>
 **[ESP32 problems](#esp32-problems)**<br>
@@ -25,6 +26,16 @@ Most problems can be resolved by following these steps:
 3. Check your software, library and board versions: for best reliability, use the versions listed in the [Readme](README.md#library-and-software-versions).
 4. Remove all wire connections and re-wire carefully.
 5. If you have edited the code, go back to the original version and ensure it still works.
+
+
+## Edge detection error
+
+The Python examples running on Raspberry Pi may cause a ```Failed to add edge detection``` runtime error. This happens in the "Bookworm" version of Raspberry Pi OS, due to a problem with the old GPIO library. It may also occur in future OS versions. The simple fix is to install the new improved GPIO library by running the following:
+	```
+	sudo apt remove python3-rpi.gpio
+	sudo apt update
+	sudo apt install python3-rpi-lgpio
+	```
 
 
 ## WiFi Access Point examples not starting

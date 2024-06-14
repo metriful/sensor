@@ -109,25 +109,32 @@ The example programs for Raspberry Pi computers use Python 3 and are located in 
 
 This setup assumes that you are using Raspberry Pi OS. The standard OS version comes with all required Python packages already installed (except packages for the [Graph viewer software](#graph-viewer-software)). The **Lite** (command line) OS version requires package installation, as listed below.
 
-1. If you are using Raspberry Pi OS Lite (or get missing package errors), run the following commands to install required packages:
+1. If you are using Raspberry Pi OS **Lite** (or get missing package errors), run the following commands to install required packages:
 	```
 	sudo apt-get update
 	sudo apt install i2c-tools python3-smbus python3-rpi.gpio
 	pip3 install jinja2 psutil pyserial requests
 	```
 
-2. Enable I2C on your Raspberry Pi using the raspi-config utility by opening a terminal and running:
+2. If you are using the "Bookworm" (or newer) version of Raspberry Pi OS, you need to upgrade your GPIO library by running the following:
+	```
+	sudo apt remove python3-rpi.gpio
+	sudo apt update
+	sudo apt install python3-rpi-lgpio
+	```
+
+3. Enable I2C on your Raspberry Pi using the raspi-config utility by opening a terminal and running:
 	```
 	sudo raspi-config
 	```
 	Select **Interface Options** and then **I2C**. A prompt will appear asking "Would you like the ARM I2C interface to be enabled?": select **Yes** and then exit the utility.
-3. Shut-down the Raspberry Pi and disconnect the power. Wire up the hardware as described in the following section. Double-check the wiring then restart the Pi.
-4. Check that the Metriful MS430 board can be detected by running: 
+4. Shut-down the Raspberry Pi and disconnect the power. Wire up the hardware as described in the following section. Double-check the wiring then restart the Pi.
+5. Check that the Metriful MS430 board can be detected by running:
 	```
 	sudo i2cdetect -y 1
 	```
 	This should report the 7-bit address number **71**.
-5. Clone, or download and unzip, this [Sensor repository](https://www.github.com/metriful/sensor), placing the folder anywhere on your system e.g. in your user home folder. The Raspberry Pi examples are in the **Python/Raspberry_Pi** folder.
+6. Clone, or download and unzip, the [Sensor repository](https://www.github.com/metriful/sensor), placing the folder anywhere on your system e.g. in your user home folder. The Raspberry Pi examples are in the **Python/Raspberry_Pi** folder.
 
 ### Wiring for Raspberry Pi
 
@@ -143,7 +150,7 @@ This setup assumes that you are using Raspberry Pi OS. The standard OS version c
 |         SIT       |          8              |        GPIO 14        |
 |         RDY       |          11             |        GPIO 17        |
 
-* Raspberry Pi pin numbering is [shown here](https://www.raspberrypi.com/documentation/computers/os.html#gpio-and-the-40-pin-header).
+* Raspberry Pi pin numbering is [shown here](https://web.archive.org/web/20230624215645/https://www.raspberrypi.com/documentation/computers/os.html#gpio-and-the-40-pin-header).
 * MS430 pin VIN is not used.
 * LIT/SIT connections are optional and only required if you are using light/sound interrupts.
 
@@ -188,7 +195,7 @@ Note that steps 1 and 2 are already complete if you have used Arduino IDE before
 |        SIT      |        32            |
 |        RDY      |        34            |
 
-* The pin numbering is shown on the offial pinout datasheet available at [https://datasheets.raspberrypi.com](https://datasheets.raspberrypi.com).
+* The pin numbering is shown on the official pinout datasheet available at [https://datasheets.raspberrypi.com](https://datasheets.raspberrypi.com).
 * MS430 pin VIN is not used.
 * LIT/SIT connections are optional and only required if you are using light/sound interrupts.
 * VPU can be supplied from any spare host digital output pin set to a high voltage state. This can be useful for hosts without enough power output pins.
