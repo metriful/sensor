@@ -11,6 +11,10 @@
 
 #########################################################################
 
+binary_sensor:
+  - platform: status
+    name: "Status"
+
 sensor:
 - platform: custom
   lambda: |-
