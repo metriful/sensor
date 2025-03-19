@@ -483,11 +483,11 @@ This starts a temporary local web server on your computer. Leave this process ru
 
 4. In the dialog, give your device a unique name (this is the **device_name**) and input your WiFi network name (SSID) and password.
 
-5. Choose your board type from the list (ESP, Pico, etc.), then copy the encryption key for later use (it can also be found in a local yaml file). 
+5. Choose your board type from the list (ESP, Pico, etc.), then copy the encryption key for later use (it can also be found in the generated yaml file). 
 
 6. Plug the microcontroller board into your computer via USB, then click "install" and choose:
 	* **Manual download** for Raspberry Pi Pico W; install is complete when the drive disappears.
-	* **Plug into the computer running ESPHome Dashboard** for all other boards. The install is complete when coloured logs about WiFi signal appear in the window: then click "stop" to close the window.
+	* **Plug into the computer running ESPHome** for all other boards. The install is complete when coloured logs about WiFi signal appear in the window: then click "stop" to close the window.
 
 7. In the Arduino/Metriful_Sensor folder, a new file called <device_name>.yaml should have appeared. As its first three lines, it has:
 ```
@@ -499,7 +499,7 @@ Where ```<device_name>``` is the name you chose. **Replace** these three lines w
 
 8. In the **substitutions** section of the edited yaml file, provide your device_name and (optionally) values for the other two variables. Save the file.
 
-9. A new tile should have appeared on the web page, titled with your device_name. Click the 3 dots on it, then on "install" and choose "wirelessly". The install is complete when coloured logs about WiFi signal appear in the window: then click "stop" to close the window. **Close the browser and stop the server process that began in step 2.**
+9. A new tile should have appeared on the ESPHome dashboard web page, titled with your device_name. Click the 3 dots on it, then on "install" and choose "wirelessly". The install is complete when coloured logs about WiFi signal appear in the window: then click "stop" to close the window. **Close the browser and stop the server process that began in step 2.**
 
 10. Go to your Home Assistant web dashboard. There may be a notification that a new device has been discovered. Click "configure" on it and enter the encryption key from step 5 (the key is also saved in <device_name>.yaml).
 
@@ -507,7 +507,7 @@ Where ```<device_name>``` is the name you chose. **Replace** these three lines w
 
 11. In Home Assistant go to Settings > Devices & Services > Devices tab, click on the newly added device and click "add to dashboard" under its sensors list. The list of data variables appears as a card on the dashboard/overview page.
 
-12. You can improve the appearance of the dashboard card, for example: edit the card to rename the two air quality values (remove the device_name from their display name), add a title to the card, remove variables, and reorder the list. You can also add data graphs, gauges, etc.
+12. You can improve the appearance of the dashboard card, for example: edit the names/title, remove variables, reorder the list. You can also add data graphs, gauges, etc.
 
 
 ## Home Assistant POST example
@@ -648,7 +648,7 @@ The following versions were used for testing.
 
 ### Arduino
 
-* Arduino IDE: 2.2.1
+* Arduino IDE: 2.3.4
 * Raspberry Pi Pico/RP2040 by Earle F. Philhower board package: 3.6.0
 * ESP32 by Espressif Systems board package: 2.0.14
 * ESP8266 by ESP8266 Community board package: 3.1.2
@@ -671,8 +671,8 @@ The following versions were used for testing.
 
 ### Home Assistant / ESPHome
 
-* Home Assistant OS: 10.5 (RPi 3)
-* ESPHome: 2023.9.3
+* Home Assistant OS: 15.0 (RPi 3)
+* ESPHome: 2025.2.2
 
 
 ## Case, enclosure and mounting ideas

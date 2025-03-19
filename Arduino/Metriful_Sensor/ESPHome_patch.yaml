@@ -1,36 +1,36 @@
 # Use the MS430 with ESPHome by adding this file to your yaml 
 # device configuration file.
 
-# Replace the "esphome:" section in your wizard-generated yaml file
-# with the entire contents of this file and then edit the
-# three substitutions.
+# 1. Generate a yaml file using ESPHome.
+# 2. Replace the "esphome:" section (the first 3 lines) in your
+#    yaml file with the entire contents of this file.
+# 3. Edit the values for the three substitutions:
 
-# "device_name" identifies the microcontroller board.
+# "device_name" identifies the microcontroller board and is the default
+# display name in Home Assistant.
 
-# "friendly_name" is prepended to each sensor name and displayed by
-# default on dashboard cards in Home Assistant. These default names
-# can be overridden manually with new names in Home Assistant.
+# "particle_sensor_disabled" should be 'true' if a particle sensor is
+# not attached. If a particle sensor is attached, configure its type in
+# Metriful_sensor.h and set particle_sensor_disabled to be 'false'.
+
+# "temperature_offset" is an optional constant adjustment for the
+# temperature measurement.
 
 substitutions:
   device_name: put_your_device_name_here
-  friendly_name: " "  # Prefer a space here to leave the sensor names unchanged
-  temperature_offset: "0.0"  # Optional adjustment for temperature sensor
-
-# The optional particle sensor is configured in Metriful_sensor.h
-# Temperature is always sent to Home Assistant as Celsius and can
-# be displayed there as Fahrenheit if required.
+  particle_sensor_disabled: 'true'
+  temperature_offset: "0.0"
 
 # The file below this line should not require any edits.
 ###############################################################################
 
 esphome:
   name: ${device_name}
-  friendly_name: ${friendly_name}
+  friendly_name: ${device_name}
   includes:
     - sensor_constants.h
     - host_pin_definitions.h
     - Metriful_sensor.h
-    - MS430_ESPHome.h
     - Metriful_sensor.cpp
   libraries:
     - Wire
